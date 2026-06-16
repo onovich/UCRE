@@ -53,9 +53,9 @@ format, lint, typecheck, test, build, structureCheck, docsCheck
 
 ## Dev Server
 
-Start command: ``
-Health URL: ``
-Ready text: ``
+Start command: `corepack pnpm --filter @ucre/game dev`
+Health URL: `http://127.0.0.1:5173`
+Ready text: `root`
 Timeout seconds: 30
 
 ## Safety Policy

@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 4 - Game Shell And Devtools
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: scaffold the React game shell around command dispatch.
+- Next recommended round: add legal command/target preview and a state diff panel.
 
 ## Round Template
 
@@ -231,5 +231,15 @@ Notes:
 - Files changed: `packages/rulesets/package.json`, `packages/rulesets/tsconfig.json`, `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, `packages/rulesets/fixtures/slay-like-sample-manifest.yaml`, `pnpm-lock.yaml`, `docs/adr/0019-slay-like-compiled-content.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/rulesets/src packages/content-compiler/src packages/content-schema/src`, `corepack pnpm typecheck`, `corepack pnpm content:lint packages/rulesets/fixtures/slay-like-sample-manifest.yaml`, full project validation, and forbidden dependency/nondeterminism searches across core, replay, rulesets, content schema, and content compiler packages.
 - Result: passed.
-- Commit: pending.
+- Commit: `960c182 feat(rulesets): load compiled slay content`
 - Notes: Phase 3 exit gate is locally satisfied: authoring content is schema-validated, compiled, linted, hashed, and loaded into Slay-like ruleset command tests without UI or file parsing inside the ruleset runtime.
+
+### 2026-06-17 - Round P4R1
+
+- Phase: Phase 4 - Game Shell And Devtools
+- Deliverable: replaced the placeholder game app with a React Slay-like command-dispatch shell showing resources, hand cards, enemy intent, rewards, event log, debug metadata, and state summary.
+- Files changed: `apps/game/package.json`, `apps/game/src/App.tsx`, `apps/game/src/styles.css`, `.codex/project-ops-workflow.json`, `docs/codex-ops-workflow.md`, `pnpm-lock.yaml`, `docs/adr/0020-game-shell-command-boundary.md`, and this progress log.
+- Validation: `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/game build`, `corepack pnpm --filter @ucre/sandbox build`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\StartDevServer.cmd`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Smoke.cmd`, browser smoke for Draw -> Strike -> Strike -> choose Iron Wave, mobile 390px overflow check, browser console check, direct UI state mutation audit, full project validation, and forbidden dependency/nondeterminism searches.
+- Result: passed.
+- Commit: pending.
+- Notes: The app renders default Slay-like state and all gameplay changes flow through `executeSlayLikeCommand`; the dev-server wrapper now runs the game shell at `http://127.0.0.1:5173`.

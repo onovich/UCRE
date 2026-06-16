@@ -90,9 +90,9 @@
                                          }
                    },
     "devServer":  {
-                      "startCommand":  "",
-                      "healthUrl":  "",
-                      "readyText":  "",
+                      "startCommand":  "corepack pnpm --filter @ucre/game dev",
+                      "healthUrl":  "http://127.0.0.1:5173",
+                      "readyText":  "root",
                       "startupTimeoutSeconds":  30,
                       "pidFile":  ".codex/project-ops-devserver.pid"
                   },

@@ -56,6 +56,12 @@ importers:
 
   apps/game:
     dependencies:
+      '@ucre/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@ucre/rulesets':
+        specifier: workspace:*
+        version: link:../../packages/rulesets
       react:
         specifier: ^19.1.0
         version: 19.2.7
