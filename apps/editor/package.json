@@ -9,6 +9,11 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
+  "devDependencies": {
+    "@ucre/core": "workspace:*",
+    "@ucre/replay": "workspace:*",
+    "@ucre/rulesets": "workspace:*"
+  },
   "scripts": {
     "build": "vite build",
     "dev": "vite"

@@ -122,7 +122,7 @@ describe("card editor model", () => {
         intents: [
           {
             id: "enemyBlock",
-            type: "BlockGained",
+            type: "GainResource",
             amountText: "9",
           },
         ],
@@ -131,6 +131,7 @@ describe("card editor model", () => {
 
     expect(manifest.enemies[0]?.intents[0]?.payload).toEqual({
       amount: 9,
+      resourceId: "block",
     });
   });
 

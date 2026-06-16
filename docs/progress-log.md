@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 9 - Editor, Simulation, And Balance Tools
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add content compile round-trip.
+- Next recommended round: add simulation CLI.
 
 ## Round Template
 
@@ -511,5 +511,15 @@ Notes:
 - Files changed: `apps/editor/src/App.tsx`, `apps/editor/src/card-editor-model.ts`, `apps/editor/src/card-editor-model.test.ts`, `apps/editor/src/styles.css`, and this progress log.
 - Validation: `corepack pnpm test apps/editor/src/card-editor-model.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/editor build`, Playwright editor smoke on `http://127.0.0.1:5175` for reward-pool creation, missing-card repair, invalid-weight repair, clean console, and 390px mobile overflow, Phase 9 architecture searches for browser-safe compiler imports and pure package dependency leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed.
-- Commit: pending.
+- Commit: `e10617f feat(editor): add reward pool editing`
 - Notes: Reward pools now validate against current draft cards through the shared compiler instead of duplicating reference checks in the UI.
+
+### 2026-06-17 - Round P9R4
+
+- Phase: Phase 9 - Editor, Simulation, And Balance Tools
+- Deliverable: upgraded editor manifests into Slay-like runtime-loadable content and added a round-trip test that compiles a new editor card, loads it into Slay-like runtime content, plays it, claims a reward, and verifies repeated replay hashes.
+- Files changed: `apps/editor/package.json`, `apps/editor/src/card-editor-model.ts`, `apps/editor/src/card-editor-model.test.ts`, `apps/editor/src/content-round-trip.test.ts`, `pnpm-lock.yaml`, `docs/adr/0040-editor-slay-like-round-trip-manifest.md`, and this progress log.
+- Validation: `corepack pnpm test apps/editor/src/card-editor-model.test.ts apps/editor/src/content-round-trip.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/editor build`, Playwright editor smoke on `http://127.0.0.1:5175` for runtime effect type visibility, reward reference repair, clean console, runtime-loadable manifest preview, and 390px mobile overflow, Phase 9 architecture searches for browser-safe compiler imports and test-only ruleset/replay dependencies, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed.
+- Commit: pending.
+- Notes: Editor-authored Slay-like content now carries standard resources, zones, starter deck metadata, enemy metadata, relic metadata, runtime effect types, reward pools, and stable replay coverage.

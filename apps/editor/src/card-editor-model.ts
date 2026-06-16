@@ -2,7 +2,7 @@ import { compileContentManifest, type ContentCompileResult } from "@ucre/content
 import type { ContentManifest } from "@ucre/content-schema";
 
 export type CardTargetPolicy = ContentManifest["cards"][number]["targetPolicy"];
-export type DraftEffectKind = "DamageDealt" | "BlockGained" | "ResourceChanged";
+export type DraftEffectKind = "DealDamage" | "GainResource" | "ResourceChanged";
 export type EditorEntityKind = "cards" | "relics" | "enemies" | "rewardPools";
 
 export interface DraftCardEffect {
@@ -68,8 +68,8 @@ export const CARD_TARGET_POLICIES: readonly CardTargetPolicy[] = [
 ];
 
 export const DRAFT_EFFECT_KINDS: readonly DraftEffectKind[] = [
-  "DamageDealt",
-  "BlockGained",
+  "DealDamage",
+  "GainResource",
   "ResourceChanged",
 ];
 
@@ -100,7 +100,7 @@ export function createInitialDraftCards(): readonly DraftCard[] {
       effects: [
         {
           id: "sparkStrikeDamage",
-          type: "DamageDealt",
+          type: "DealDamage",
           amountText: "6",
         },
       ],
@@ -114,7 +114,7 @@ export function createInitialDraftCards(): readonly DraftCard[] {
       effects: [
         {
           id: "guardPulseBlock",
-          type: "BlockGained",
+          type: "GainResource",
           amountText: "5",
         },
       ],
@@ -151,7 +151,7 @@ export function createInitialDraftEnemies(): readonly DraftEnemy[] {
       intents: [
         {
           id: "trainingWardenStrike",
-          type: "DamageDealt",
+          type: "DealDamage",
           amountText: "7",
         },
       ],
@@ -187,7 +187,7 @@ export function createDraftCard(sequence: number): DraftCard {
     effects: [
       {
         id: `draftCard${sequence}Effect`,
-        type: "DamageDealt",
+        type: "DealDamage",
         amountText: "6",
       },
     ],
@@ -220,7 +220,7 @@ export function createDraftEnemy(sequence: number): DraftEnemy {
     intents: [
       {
         id: `draftEnemy${sequence}Intent`,
-        type: "DamageDealt",
+        type: "DealDamage",
         amountText: "6",
       },
     ],
@@ -280,11 +280,11 @@ export function duplicateDraftRewardPool(
   };
 }
 
-export function createDraftEffect(sequence: number, type: DraftEffectKind = "DamageDealt") {
+export function createDraftEffect(sequence: number, type: DraftEffectKind = "DealDamage") {
   return {
     id: `effect${sequence}`,
     type,
-    amountText: type === "BlockGained" ? "5" : "6",
+    amountText: type === "GainResource" ? "5" : "6",
   };
 }
 
@@ -315,15 +315,8 @@ export function buildEditorManifest(
     manifestId: "editorDraftManifest",
     rulesetId: "slay-like",
     version: "0.1.0",
-    resources: [
-      {
-        id: "energy",
-        name: "Energy",
-        initialValue: 3,
-        minValue: 0,
-      },
-    ],
-    zones: [],
+    resources: createSlayLikeResources(),
+    zones: createSlayLikeZones(content),
     cards: content.cards.map((card) => ({
       id: card.id.trim(),
       name: card.name.trim(),
@@ -365,15 +358,15 @@ export function buildEditorManifest(
     presentationProfiles: [
       {
         id: "damageFallback",
-        eventType: "DamageDealt",
+        eventType: "DealDamage",
         beatType: "damage",
         fallback: true,
         payload: {},
       },
       {
         id: "blockFallback",
-        eventType: "BlockGained",
-        beatType: "counter",
+        eventType: "GainResource",
+        beatType: "resource",
         fallback: true,
         payload: {},
       },
@@ -410,6 +403,99 @@ function normalizeEditorContent(
   return input as DraftEditorContent;
 }
 
+function createSlayLikeResources(): ContentManifest["resources"] {
+  return [
+    {
+      id: "energy",
+      name: "Energy",
+      initialValue: 3,
+      minValue: 0,
+    },
+    {
+      id: "playerHp",
+      name: "Player HP",
+      initialValue: 80,
+      minValue: 0,
+    },
+    {
+      id: "block",
+      name: "Block",
+      initialValue: 0,
+      minValue: 0,
+    },
+  ];
+}
+
+function createSlayLikeZones(content: DraftEditorContent): ContentManifest["zones"] {
+  return [
+    {
+      id: "player.drawPile",
+      kind: "deck",
+      owner: "player",
+      metadata: {
+        starterDeck: content.cards
+          .filter((card) => splitTags(card.tagsText).includes("starter"))
+          .map((card, index) => ({
+            objectId: `card-${toObjectIdSuffix(card.id)}-${index + 1}`,
+            cardId: card.id.trim(),
+          })),
+      },
+    },
+    {
+      id: "player.hand",
+      kind: "hand",
+      owner: "player",
+      metadata: {},
+    },
+    {
+      id: "player.discardPile",
+      kind: "discard",
+      owner: "player",
+      metadata: {},
+    },
+    {
+      id: "player.exhaustPile",
+      kind: "exhaust",
+      owner: "player",
+      metadata: {},
+    },
+    {
+      id: "player.playArea",
+      kind: "play",
+      owner: "player",
+      metadata: {},
+    },
+    {
+      id: "player.relics",
+      kind: "custom",
+      owner: "player",
+      metadata: {
+        relics: content.relics.map((relic) => ({
+          objectId: `relic-${toObjectIdSuffix(relic.id)}`,
+          relicId: relic.id.trim(),
+        })),
+      },
+    },
+    {
+      id: "enemy.active",
+      kind: "enemy",
+      owner: "enemy",
+      metadata: {
+        enemies: content.enemies.map((enemy) => ({
+          objectId: `enemy-${toObjectIdSuffix(enemy.id)}`,
+          enemyId: enemy.id.trim(),
+        })),
+      },
+    },
+    {
+      id: "reward.choices",
+      kind: "reward",
+      owner: "shared",
+      metadata: {},
+    },
+  ];
+}
+
 function duplicateEffects(
   effects: readonly DraftCardEffect[],
   prefix: string,
@@ -427,6 +513,13 @@ function createEffectPayload(effect: DraftCardEffect): Record<string, number | s
     return {
       resourceId: "energy",
       delta: amount,
+    };
+  }
+
+  if (effect.type === "GainResource") {
+    return {
+      resourceId: "block",
+      amount,
     };
   }
 
@@ -450,4 +543,14 @@ function splitTags(text: string): string[] {
     .split(/[,\s]+/)
     .map((tag) => tag.trim())
     .filter((tag) => tag.length > 0);
+}
+
+function toObjectIdSuffix(id: string): string {
+  const suffix = id
+    .trim()
+    .replace(/[^A-Za-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+
+  return suffix || "draft";
 }
