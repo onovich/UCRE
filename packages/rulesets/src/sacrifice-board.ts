@@ -20,6 +20,7 @@ import type {
   GameObject,
   GameState,
   JsonObject,
+  ObjectiveState,
   PlayerId,
   PresentationIntent,
   RuleError,
@@ -72,8 +73,14 @@ export const SACRIFICE_BOARD_EVENTS = {
   laneCombatResolved: "SacrificeBoardLaneCombatResolved",
 } as const;
 
+export const SACRIFICE_BOARD_OBJECTIVES = {
+  tipScale: "sacrifice.tipScale",
+} as const;
+
 export const SACRIFICE_BOARD_FLAGS = {
   boardStarted: "sacrifice.boardStarted",
+  scaleVictory: "sacrifice.scaleVictory",
+  scaleDefeat: "sacrifice.scaleDefeat",
 } as const;
 
 export type SacrificeBoardSide = "player" | "opponent";
@@ -124,6 +131,7 @@ export interface CreateSacrificeBoardGameInput extends SacrificeBoardRuntimeCont
   readonly startingBlood?: number;
   readonly startingBones?: number;
   readonly startingScale?: number;
+  readonly scaleTarget?: number;
   readonly startingHand?: readonly SacrificeBoardCardInstance[];
   readonly startingBoard?: readonly SacrificeBoardCardInstance[];
 }
@@ -200,6 +208,7 @@ export function createSacrificeBoardGame(input: CreateSacrificeBoardGameInput): 
     flags: {
       [SACRIFICE_BOARD_FLAGS.boardStarted]: true,
     },
+    objectives: [createScaleObjective(input.scaleTarget ?? 5)],
   };
 
   state = putZone(
@@ -764,14 +773,20 @@ function resolveLaneCombat(
     }
   }
 
-  const nextState =
+  const nextStateBeforeObjective =
     scaleDelta === 0 ? currentState : changeResource(currentState, playerId, scaleDelta);
+  const nextState = evaluateScaleObjective(nextStateBeforeObjective, playerId);
   const event: RuleEvent = {
     id: eventIdFor(commandId, effect),
     type: SACRIFICE_BOARD_EVENTS.laneCombatResolved,
     payload: {
       playerId,
       scaleDelta,
+      phase: nextState.phase,
+      objectiveStatus:
+        nextState.objectives.find(
+          (objective) => objective.id === SACRIFICE_BOARD_OBJECTIVES.tipScale,
+        )?.status ?? "pending",
       laneResults,
     },
     ...(commandId ? { causedByCommandId: commandId } : {}),
@@ -824,6 +839,59 @@ function changeResource(state: GameState, playerId: PlayerId, scaleDelta: number
       },
     },
   };
+}
+
+function createScaleObjective(scaleTarget: number): ObjectiveState {
+  return {
+    id: SACRIFICE_BOARD_OBJECTIVES.tipScale,
+    type: "scale",
+    status: "pending",
+    payload: {
+      resourceId: SACRIFICE_BOARD_RESOURCES.scale,
+      target: scaleTarget,
+    },
+  };
+}
+
+function evaluateScaleObjective(state: GameState, playerId: PlayerId): GameState {
+  const scaleObjective = state.objectives.find(
+    (objective) => objective.id === SACRIFICE_BOARD_OBJECTIVES.tipScale,
+  );
+  if (!scaleObjective || scaleObjective.status !== "pending") {
+    return state;
+  }
+
+  const target = readObjectiveTarget(scaleObjective);
+  const scale = state.resources[playerId]?.values[SACRIFICE_BOARD_RESOURCES.scale] ?? 0;
+  const nextStatus = scale >= target ? "succeeded" : scale <= -target ? "failed" : "pending";
+  if (nextStatus === "pending") {
+    return state;
+  }
+
+  return {
+    ...state,
+    phase:
+      nextStatus === "succeeded" ? SACRIFICE_BOARD_PHASES.complete : SACRIFICE_BOARD_PHASES.defeat,
+    flags: {
+      ...state.flags,
+      ...(nextStatus === "succeeded"
+        ? { [SACRIFICE_BOARD_FLAGS.scaleVictory]: true }
+        : { [SACRIFICE_BOARD_FLAGS.scaleDefeat]: true }),
+    },
+    objectives: state.objectives.map((objective) =>
+      objective.id === SACRIFICE_BOARD_OBJECTIVES.tipScale
+        ? {
+            ...objective,
+            status: nextStatus,
+          }
+        : objective,
+    ),
+  };
+}
+
+function readObjectiveTarget(objective: ObjectiveState): number {
+  const target = objective.payload.target;
+  return typeof target === "number" ? target : 5;
 }
 
 function isPlayerBoardCreature(state: GameState, objectId: string): boolean {

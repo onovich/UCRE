@@ -1,0 +1,39 @@
+{
+  "input": {
+    "gameId": "sacrifice-board-scale-replay",
+    "seed": "seed-sacrifice-board-1",
+    "rulesVersion": "sacrifice-board-0",
+    "contentManifestHash": "sacrifice-board-inline-content-0",
+    "initial": {
+      "scaleTarget": 4,
+      "startingBoard": [
+        {
+          "id": "wolf-board-1",
+          "definitionId": "wolf",
+          "side": "player",
+          "laneIndex": 0
+        },
+        {
+          "id": "stoat-board-1",
+          "definitionId": "stoat",
+          "side": "player",
+          "laneIndex": 1
+        }
+      ]
+    },
+    "commands": [
+      {
+        "id": "command-1",
+        "type": "sacrifice.resolveCombat",
+        "playerId": "player-1",
+        "payload": {}
+      }
+    ]
+  },
+  "expected": {
+    "commandHash": "ucre1-14960f07",
+    "stateHash": "ucre1-e17facbd",
+    "eventHash": "ucre1-3830e878",
+    "replayHash": "ucre1-081a87aa"
+  }
+}

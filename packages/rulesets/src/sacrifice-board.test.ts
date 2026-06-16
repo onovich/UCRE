@@ -7,6 +7,7 @@ import {
   SACRIFICE_BOARD_EVENTS,
   SACRIFICE_BOARD_DEFAULT_LANE_COUNT,
   SACRIFICE_BOARD_FLAGS,
+  SACRIFICE_BOARD_OBJECTIVES,
   SACRIFICE_BOARD_PHASES,
   SACRIFICE_BOARD_RESOURCES,
   SACRIFICE_BOARD_RULES_VERSION,
@@ -242,10 +243,67 @@ describe("sacrifice-board topology", () => {
       [],
     );
     expect(result.state.resources["player-1"]?.values[SACRIFICE_BOARD_RESOURCES.scale]).toBe(1);
+    expect(result.state.phase).toBe(SACRIFICE_BOARD_PHASES.main);
+    expect(
+      result.state.objectives.find(
+        (objective) => objective.id === SACRIFICE_BOARD_OBJECTIVES.tipScale,
+      )?.status,
+    ).toBe("pending");
     expect(result.events.at(-1)).toMatchObject({
       type: SACRIFICE_BOARD_EVENTS.laneCombatResolved,
       payload: {
         scaleDelta: 1,
+      },
+    });
+  });
+
+  it("completes the scale objective when lane damage reaches the target", () => {
+    const result = executeSacrificeBoardCommand({
+      state: createSacrificeBoardGame({
+        gameId: "sacrifice-scale-win",
+        seed: "sacrifice-scale-win-seed",
+        scaleTarget: 4,
+        startingBoard: [
+          {
+            id: "wolf-board-1",
+            definitionId: "wolf",
+            side: "player",
+            laneIndex: 0,
+          },
+          {
+            id: "stoat-board-1",
+            definitionId: "stoat",
+            side: "player",
+            laneIndex: 1,
+          },
+        ],
+      }),
+      command: {
+        id: "resolve-combat",
+        type: SACRIFICE_BOARD_COMMANDS.resolveCombat,
+        playerId: "player-1",
+        payload: {},
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("Sacrifice-board scale objective combat unexpectedly failed.");
+    }
+    expect(result.state.phase).toBe(SACRIFICE_BOARD_PHASES.complete);
+    expect(result.state.flags[SACRIFICE_BOARD_FLAGS.scaleVictory]).toBe(true);
+    expect(result.state.resources["player-1"]?.values[SACRIFICE_BOARD_RESOURCES.scale]).toBe(4);
+    expect(
+      result.state.objectives.find(
+        (objective) => objective.id === SACRIFICE_BOARD_OBJECTIVES.tipScale,
+      )?.status,
+    ).toBe("succeeded");
+    expect(result.events.at(-1)).toMatchObject({
+      type: SACRIFICE_BOARD_EVENTS.laneCombatResolved,
+      payload: {
+        scaleDelta: 4,
+        phase: SACRIFICE_BOARD_PHASES.complete,
+        objectiveStatus: "succeeded",
       },
     });
   });
