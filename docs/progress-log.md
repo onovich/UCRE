@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 8 - Ruleset Pressure Tests
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add blackjack-like hit, stand, and dealer policy commands.
+- Next recommended round: add blackjack-like replay fixture.
 
 ## Round Template
 
@@ -431,5 +431,15 @@ Notes:
 - Files changed: `packages/rulesets/src/blackjack-like.ts`, `packages/rulesets/src/blackjack-like.test.ts`, `packages/rulesets/src/index.ts`, `docs/adr/0034-blackjack-like-ruleset-scaffold.md`, and this progress log.
 - Validation: `corepack pnpm test packages/rulesets/src/blackjack-like.test.ts`, `corepack pnpm --filter @ucre/rulesets build`, Phase 8 architecture searches for nondeterminism, browser/presentation imports, and premature blackjack leakage into core/replay/run/content packages, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after widening the setup state variable to `GameState` for strict TypeScript project builds.
-- Commit: pending.
+- Commit: `657e380 feat(rulesets): scaffold blackjack like setup`
 - Notes: Blackjack-like setup now proves the shared core can represent an ordered dealer shoe, player/dealer hands, discard and wager zones, player chips/current bet/suspicion resources, and deterministic state hashes without adding new core mechanics.
+
+### 2026-06-17 - Round P8R2
+
+- Phase: Phase 8 - Ruleset Pressure Tests
+- Deliverable: added blackjack-like command and effect registries for initial deal, hit, stand, player bust evaluation, dealer draw policy, and deterministic chip settlement.
+- Files changed: `packages/rulesets/src/blackjack-like.ts`, `packages/rulesets/src/blackjack-like.test.ts`, `docs/adr/0035-blackjack-like-command-flow.md`, and this progress log.
+- Validation: `corepack pnpm test packages/rulesets/src/blackjack-like.test.ts`, `corepack pnpm --filter @ucre/rulesets build`, `corepack pnpm lint`, Phase 8 architecture searches for nondeterminism, browser/presentation imports, and blackjack leakage outside rulesets, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after changing one local presentation intent accumulator to a mutable `PresentationIntent[]` and removing unused command parameters caught by lint.
+- Commit: pending.
+- Notes: Blackjack-like behavior now runs through the same core command/effect pipeline as Slay-like, with core `MoveObject` handling card motion and ruleset-only effects handling phase, hand value, dealer policy, and settlement.
