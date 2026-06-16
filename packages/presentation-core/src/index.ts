@@ -22,6 +22,9 @@ export type PresentationBeatKind =
   | "resource"
   | "counter"
   | "objective"
+  | "trigger"
+  | "reward"
+  | "camera"
   | "generic";
 
 export type PresentationTrackStrategy = "sequence" | "kind" | "intent";
@@ -35,6 +38,9 @@ export type PresentationBeatProfile =
   | DestroyPresentationBeatProfile
   | ResourcePresentationBeatProfile
   | CounterPresentationBeatProfile
+  | TriggerPresentationBeatProfile
+  | RewardPresentationBeatProfile
+  | CameraPresentationBeatProfile
   | GenericPresentationBeatProfile;
 
 export interface BasePresentationBeatProfile {
@@ -101,6 +107,29 @@ export interface CounterPresentationBeatProfile extends BasePresentationBeatProf
   readonly delta?: number;
 }
 
+export interface TriggerPresentationBeatProfile extends BasePresentationBeatProfile {
+  readonly kind: "trigger";
+  readonly triggerId?: string;
+  readonly triggerType?: string;
+  readonly sourceEventId?: string;
+}
+
+export interface RewardPresentationBeatProfile extends BasePresentationBeatProfile {
+  readonly kind: "reward";
+  readonly rewardObjectId?: string;
+  readonly rewardZoneId?: string;
+  readonly rewardPoolId?: string;
+  readonly offeredObjectIds?: readonly string[];
+  readonly selectedObjectId?: string;
+}
+
+export interface CameraPresentationBeatProfile extends BasePresentationBeatProfile {
+  readonly kind: "camera";
+  readonly targetId?: string;
+  readonly targetKind?: string;
+  readonly emphasis?: string;
+}
+
 export interface GenericPresentationBeatProfile extends BasePresentationBeatProfile {
   readonly kind: "objective" | "generic";
   readonly payload: JsonObject;
@@ -147,8 +176,26 @@ export interface PresentationDirectorSnapshotInput {
   readonly associatedStateHash?: string;
 }
 
+export interface CreatePresentationRandomStreamInput {
+  readonly seed: string;
+  readonly streamId?: string;
+  readonly cursor?: number;
+}
+
+export interface PresentationRandomStream {
+  readonly seed: string;
+  readonly streamId: string;
+  readonly cursor: number;
+}
+
+export interface PresentationRandomSample {
+  readonly stream: PresentationRandomStream;
+  readonly value: number;
+}
+
 const DEFAULT_BEAT_DURATION_MS = 320;
 const DEFAULT_BEAT_GAP_MS = 40;
+const DEFAULT_PRESENTATION_RANDOM_STREAM_ID = "presentation";
 
 export function createBeatSchedule(
   intents: readonly PresentationIntent[],
@@ -234,6 +281,28 @@ export function setPresentationPlaybackRate(
   });
 }
 
+export function createPresentationRandomStream(
+  input: CreatePresentationRandomStreamInput,
+): PresentationRandomStream {
+  return {
+    seed: input.seed,
+    streamId: input.streamId ?? DEFAULT_PRESENTATION_RANDOM_STREAM_ID,
+    cursor: normalizeNonNegativeInteger(input.cursor, 0),
+  };
+}
+
+export function nextPresentationRandom(stream: PresentationRandomStream): PresentationRandomSample {
+  const value = hashTextToUnitInterval(`${stream.seed}:${stream.streamId}:${stream.cursor}`);
+
+  return {
+    stream: {
+      ...stream,
+      cursor: stream.cursor + 1,
+    },
+    value,
+  };
+}
+
 export function createPresentationBeatProfile(intent: PresentationIntent): PresentationBeatProfile {
   const kind = classifyPresentationIntent(intent.type);
 
@@ -265,6 +334,18 @@ export function createPresentationBeatProfile(intent: PresentationIntent): Prese
     return createCounterProfile(intent);
   }
 
+  if (kind === "trigger") {
+    return createTriggerProfile(intent);
+  }
+
+  if (kind === "reward") {
+    return createRewardProfile(intent);
+  }
+
+  if (kind === "camera") {
+    return createCameraProfile(intent);
+  }
+
   return {
     kind,
     sourceIntentType: intent.type,
@@ -273,6 +354,8 @@ export function createPresentationBeatProfile(intent: PresentationIntent): Prese
 }
 
 export function classifyPresentationIntent(type: string): PresentationBeatKind {
+  const normalizedType = type.toLowerCase();
+
   if (type === MOVE_OBJECT_INTENT_TYPE) {
     return "move";
   }
@@ -301,8 +384,20 @@ export function classifyPresentationIntent(type: string): PresentationBeatKind {
     return "counter";
   }
 
-  if (type.toLowerCase().includes("objective")) {
+  if (normalizedType.includes("objective")) {
     return "objective";
+  }
+
+  if (normalizedType.includes("trigger")) {
+    return "trigger";
+  }
+
+  if (normalizedType.includes("reward")) {
+    return "reward";
+  }
+
+  if (normalizedType.includes("camera") || normalizedType.includes("focus")) {
+    return "camera";
   }
 
   return "generic";
@@ -419,6 +514,52 @@ function createCounterProfile(intent: PresentationIntent): CounterPresentationBe
   };
 }
 
+function createTriggerProfile(intent: PresentationIntent): TriggerPresentationBeatProfile {
+  const triggerId = readString(intent.payload, "triggerId");
+  const triggerType = readString(intent.payload, "triggerType");
+  const sourceEventId = readString(intent.payload, "sourceEventId");
+  return {
+    kind: "trigger",
+    sourceIntentType: intent.type,
+    ...(triggerId !== undefined ? { triggerId } : {}),
+    ...(triggerType !== undefined ? { triggerType } : {}),
+    ...(sourceEventId !== undefined ? { sourceEventId } : {}),
+  };
+}
+
+function createRewardProfile(intent: PresentationIntent): RewardPresentationBeatProfile {
+  const rewardObjectId = readString(intent.payload, "rewardObjectId");
+  const rewardZoneId = readString(intent.payload, "rewardZoneId");
+  const rewardPoolId = readString(intent.payload, "rewardPoolId");
+  const offeredObjectIds = readStringArray(intent.payload, "offeredObjectIds");
+  const selectedObjectId = readString(intent.payload, "selectedObjectId");
+  return {
+    kind: "reward",
+    sourceIntentType: intent.type,
+    ...(rewardObjectId !== undefined ? { rewardObjectId } : {}),
+    ...(rewardZoneId !== undefined ? { rewardZoneId } : {}),
+    ...(rewardPoolId !== undefined ? { rewardPoolId } : {}),
+    ...(offeredObjectIds !== undefined ? { offeredObjectIds } : {}),
+    ...(selectedObjectId !== undefined ? { selectedObjectId } : {}),
+  };
+}
+
+function createCameraProfile(intent: PresentationIntent): CameraPresentationBeatProfile {
+  const targetId =
+    readString(intent.payload, "targetId") ??
+    readString(intent.payload, "targetObjectId") ??
+    readString(intent.payload, "targetZoneId");
+  const targetKind = readString(intent.payload, "targetKind");
+  const emphasis = readString(intent.payload, "emphasis");
+  return {
+    kind: "camera",
+    sourceIntentType: intent.type,
+    ...(targetId !== undefined ? { targetId } : {}),
+    ...(targetKind !== undefined ? { targetKind } : {}),
+    ...(emphasis !== undefined ? { emphasis } : {}),
+  };
+}
+
 function createTrackId(
   intent: PresentationIntent,
   kind: PresentationBeatKind,
@@ -460,6 +601,16 @@ function normalizeNonNegativeInteger(value: number | undefined, fallback: number
   }
 
   return value;
+}
+
+function hashTextToUnitInterval(value: string): number {
+  let hash = 2166136261;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = Math.imul(hash ^ value.charCodeAt(index), 16777619) >>> 0;
+  }
+
+  return hash / 0x100000000;
 }
 
 function readString(payload: JsonObject, key: string): string | undefined {

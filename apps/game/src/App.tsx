@@ -700,6 +700,20 @@ function formatBeatProfile(beat: PresentationBeat): string {
     } to ${profile.nextValue ?? "?"}`;
   }
 
+  if (profile.kind === "trigger") {
+    return `${profile.triggerType ?? "trigger"} ${profile.triggerId ?? ""}`.trim();
+  }
+
+  if (profile.kind === "reward") {
+    return `${profile.rewardPoolId ?? "reward"} in ${profile.rewardZoneId ?? "reward zone"}`;
+  }
+
+  if (profile.kind === "camera") {
+    return `${profile.targetKind ?? "target"} ${profile.targetId ?? "?"} ${
+      profile.emphasis ?? "focus"
+    }`;
+  }
+
   return formatDiffValue(profile.payload);
 }
 

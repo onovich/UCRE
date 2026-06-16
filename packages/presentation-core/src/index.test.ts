@@ -10,6 +10,8 @@ import {
   classifyPresentationIntent,
   createBeatSchedule,
   createPresentationDirectorSnapshot,
+  createPresentationRandomStream,
+  nextPresentationRandom,
   setPresentationPlaybackRate,
   skipPresentationDirector,
 } from "./index.js";
@@ -79,8 +81,8 @@ describe("presentation-core beat scheduler", () => {
       },
       {
         id: "intent-custom-1:beat:2",
-        kind: "generic",
-        trackId: "kind:generic",
+        kind: "reward",
+        trackId: "kind:reward",
         startTimeMs: 450,
         durationMs: 200,
       },
@@ -127,6 +129,9 @@ describe("presentation-core beat scheduler", () => {
     expect(classifyPresentationIntent(MOVE_OBJECT_INTENT_TYPE)).toBe("move");
     expect(classifyPresentationIntent(DAMAGE_DEALT_INTENT_TYPE)).toBe("damage");
     expect(classifyPresentationIntent("ObjectiveSucceeded")).toBe("objective");
+    expect(classifyPresentationIntent("TriggerQueued")).toBe("trigger");
+    expect(classifyPresentationIntent("SlayRewardDraftOpened")).toBe("reward");
+    expect(classifyPresentationIntent("CameraFocusObject")).toBe("camera");
     expect(classifyPresentationIntent("UnknownThing")).toBe("generic");
   });
 
@@ -195,5 +200,92 @@ describe("presentation-core beat scheduler", () => {
         fromZoneId: "enemy.active",
       },
     ]);
+  });
+
+  it("normalizes trigger, reward, and camera profiles for adapters", () => {
+    const schedule = createBeatSchedule([
+      {
+        id: "intent-trigger-1",
+        type: "TriggerQueued",
+        eventId: "event-trigger-1",
+        payload: {
+          triggerId: "trigger-1",
+          triggerType: "onEnemyDefeated",
+          sourceEventId: "event-destroy-1",
+        },
+      },
+      {
+        id: "intent-reward-1",
+        type: "SlayRewardDraftOpened",
+        eventId: "event-reward-1",
+        payload: {
+          rewardZoneId: "player.reward",
+          rewardPoolId: "starter-rewards",
+          offeredObjectIds: ["reward-1", "reward-2"],
+        },
+      },
+      {
+        id: "intent-camera-1",
+        type: "CameraFocusObject",
+        eventId: "event-camera-1",
+        payload: {
+          targetObjectId: "jaw-worm",
+          targetKind: "enemy",
+          emphasis: "damage",
+        },
+      },
+    ]);
+
+    expect(schedule.beats.map((beat) => beat.profile)).toEqual([
+      {
+        kind: "trigger",
+        sourceIntentType: "TriggerQueued",
+        triggerId: "trigger-1",
+        triggerType: "onEnemyDefeated",
+        sourceEventId: "event-destroy-1",
+      },
+      {
+        kind: "reward",
+        sourceIntentType: "SlayRewardDraftOpened",
+        rewardZoneId: "player.reward",
+        rewardPoolId: "starter-rewards",
+        offeredObjectIds: ["reward-1", "reward-2"],
+      },
+      {
+        kind: "camera",
+        sourceIntentType: "CameraFocusObject",
+        targetId: "jaw-worm",
+        targetKind: "enemy",
+        emphasis: "damage",
+      },
+    ]);
+  });
+
+  it("uses explicit presentation random streams separate from rule streams", () => {
+    const vfxStream = createPresentationRandomStream({
+      seed: "run-seed-1",
+      streamId: "presentation:vfx",
+    });
+    const first = nextPresentationRandom(vfxStream);
+    const second = nextPresentationRandom(first.stream);
+    const repeatedFirst = nextPresentationRandom(
+      createPresentationRandomStream({
+        seed: "run-seed-1",
+        streamId: "presentation:vfx",
+      }),
+    );
+    const cardFanFirst = nextPresentationRandom(
+      createPresentationRandomStream({
+        seed: "run-seed-1",
+        streamId: "presentation:card-fan",
+      }),
+    );
+
+    expect(first.value).toBeGreaterThanOrEqual(0);
+    expect(first.value).toBeLessThan(1);
+    expect(first.stream.cursor).toBe(1);
+    expect(second.stream.cursor).toBe(2);
+    expect(repeatedFirst.value).toBe(first.value);
+    expect(cardFanFirst.value).not.toBe(first.value);
   });
 });

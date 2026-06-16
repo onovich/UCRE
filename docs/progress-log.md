@@ -4,9 +4,9 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 ## Current Status
 
-- Current phase: Phase 6 - Presentation Director
+- Current phase: Phase 7 - Roguelike Run Loop
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add explicit presentation RNG/profile exit checks.
+- Next recommended round: add RunState and map graph.
 
 ## Round Template
 
@@ -341,5 +341,15 @@ Notes:
 - Files changed: `apps/game/package.json`, `apps/game/src/App.tsx`, `apps/game/src/styles.css`, `pnpm-lock.yaml`, and this progress log.
 - Validation: `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, system Chrome Playwright smoke for Draw and Strike beat mappings, mobile 390px overflow check, architecture boundary searches for nondeterminism/browser APIs/GSAP isolation/direct UI state mutation, and full project validation.
 - Result: passed.
-- Commit: pending.
+- Commit: `4b30095 feat(game): show presentation beats`
 - Notes: The game shell consumes pure `presentation-core` schedules from command results and does not mutate rule state from presentation controls.
+
+### 2026-06-17 - Round P6R5
+
+- Phase: Phase 6 - Presentation Director
+- Deliverable: added explicit trigger, reward, and camera presentation beat profiles plus a namespaced presentation random stream helper separate from rule RNG streams.
+- Files changed: `packages/presentation-core/src/index.ts`, `packages/presentation-core/src/index.test.ts`, `apps/game/src/App.tsx`, `docs/adr/0028-presentation-profile-random-boundary.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/presentation-core/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/presentation-core build`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, system Chrome browser smoke for presentation beat panel loading, full project validation, and architecture boundary searches confirming presentation-core has no DOM, renderer, frame timing, ambient random, GSAP, or direct state mutation paths.
+- Result: passed.
+- Commit: pending.
+- Notes: Phase 6 exit gate is locally satisfied: presentation beats can be scheduled, skipped, accelerated, inspected by event source, animated through the GSAP adapter, profiled for core presentation categories, and given presentation-only random streams without changing rule hashes.
