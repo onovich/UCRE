@@ -139,6 +139,41 @@ button:disabled {
   padding-bottom: 14px;
 }
 
+.theater-stage {
+  background: #11100d;
+  height: 340px;
+  margin-left: -20px;
+  margin-right: -20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.theater-stage canvas {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.theater-overlay {
+  bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  left: 20px;
+  position: absolute;
+  right: 20px;
+}
+
+.theater-overlay span {
+  background: rgb(21 21 18 / 82%);
+  border: 1px solid #4d493a;
+  border-radius: 999px;
+  color: #f8e8bb;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 6px 9px;
+}
+
 .dashboard-grid {
   display: grid;
   gap: 16px;
@@ -509,6 +544,12 @@ button:disabled {
 @media (max-width: 640px) {
   .app-shell {
     padding: 14px;
+  }
+
+  .theater-stage {
+    height: 260px;
+    margin-left: -14px;
+    margin-right: -14px;
   }
 
   .app-header {

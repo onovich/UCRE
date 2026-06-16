@@ -6,6 +6,7 @@
   "dependencies": {
     "@ucre/core": "workspace:*",
     "@ucre/rulesets": "workspace:*",
+    "@ucre/theater-three": "workspace:*",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

@@ -11,6 +11,7 @@ import {
   executeSlayLikeCommand,
 } from "@ucre/rulesets";
 
+import { TheaterCanvas } from "./TheaterCanvas.js";
 import "./styles.css";
 
 const PLAYER_ID = "player-1";
@@ -178,6 +179,8 @@ export function App({ appName = "UCRE Game" }: AppProps) {
           End Turn
         </button>
       </section>
+
+      <TheaterCanvas state={state} />
 
       <section className="dashboard-grid" aria-label="Game dashboard">
         <aside className="side-panel" aria-label="Resources">

@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 5 - Three.js Card Theater Vertical Slice
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: integrate a Three.js scene shell into the game app.
+- Next recommended round: add card actor identities and zone-anchor synchronization.
 
 ## Round Template
 
@@ -261,5 +261,15 @@ Notes:
 - Files changed: `apps/game/src/App.tsx`, `apps/game/src/styles.css`, and this progress log.
 - Validation: `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, browser Run Inspector smoke, mobile 390px overflow check, browser console check, direct UI state mutation audit, full project validation, and forbidden dependency/nondeterminism searches.
 - Result: passed.
-- Commit: pending.
+- Commit: `d0d9991 feat(game): add run inspector diagnostics`
 - Notes: Phase 4 exit gate is locally satisfied: the browser shell can start, draw, play a card, end a turn, inspect event/state/debug panels, and no UI path mutates `GameState` outside command dispatch.
+
+### 2026-06-17 - Round P5R1
+
+- Phase: Phase 5 - Three.js Card Theater Vertical Slice
+- Deliverable: added the `theater-three` scene shell with camera, lights, table root, stable anchors, state-derived card count rendering, and full-width game app canvas integration.
+- Files changed: `packages/theater-three/package.json`, `packages/theater-three/tsconfig.json`, `packages/theater-three/src/index.ts`, `packages/theater-three/src/index.test.ts`, `apps/game/package.json`, `apps/game/src/App.tsx`, `apps/game/src/TheaterCanvas.tsx`, `apps/game/src/styles.css`, `pnpm-lock.yaml`, `docs/adr/0021-three-card-theater-scene.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/theater-three/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/theater-three build`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, browser canvas DOM smoke, Chrome headless screenshot pixel smoke with non-background canvas-center ratio `0.2609`, mobile 390px canvas/layout overflow check, browser console check, full project validation, and forbidden dependency/nondeterminism searches.
+- Result: passed.
+- Commit: pending.
+- Notes: Three.js remains isolated to `@ucre/theater-three` and the game app; core, rulesets, replay, and content packages stay free of presentation dependencies.
