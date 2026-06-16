@@ -45,6 +45,7 @@ export const SLAY_LIKE_ZONES = {
   discardPile: "player.discardPile",
   exhaustPile: "player.exhaustPile",
   playArea: "player.playArea",
+  relic: "player.relics",
   enemy: "enemy.active",
   reward: "reward.choices",
 } as const;
@@ -107,6 +108,13 @@ export interface SlayLikeEnemyDefinition {
   readonly intentDamage: number;
 }
 
+export interface SlayLikeRelicDefinition {
+  readonly id: string;
+  readonly objectId: string;
+  readonly name: string;
+  readonly description: string;
+}
+
 export interface CreateSlayLikeEncounterInput {
   readonly gameId: string;
   readonly seed: string;
@@ -114,6 +122,7 @@ export interface CreateSlayLikeEncounterInput {
   readonly playerId?: PlayerId;
   readonly starterDeck?: readonly SlayLikeStarterCard[];
   readonly enemies?: readonly SlayLikeEnemyDefinition[];
+  readonly relics?: readonly SlayLikeRelicDefinition[];
 }
 
 export const SLAY_LIKE_CARD_DEFINITIONS: Readonly<Record<string, SlayLikeCardDefinition>> = {
@@ -131,6 +140,77 @@ export const SLAY_LIKE_CARD_DEFINITIONS: Readonly<Record<string, SlayLikeCardDef
     requiresTarget: false,
     block: 5,
   },
+  heavyStrike: {
+    id: "heavyStrike",
+    name: "Heavy Strike",
+    cost: 2,
+    requiresTarget: true,
+    damage: 10,
+  },
+  quickStrike: {
+    id: "quickStrike",
+    name: "Quick Strike",
+    cost: 0,
+    requiresTarget: true,
+    damage: 3,
+  },
+  guard: {
+    id: "guard",
+    name: "Guard",
+    cost: 2,
+    requiresTarget: false,
+    block: 9,
+  },
+  pommelStrike: {
+    id: "pommelStrike",
+    name: "Pommel Strike",
+    cost: 1,
+    requiresTarget: true,
+    damage: 5,
+  },
+  wildSwing: {
+    id: "wildSwing",
+    name: "Wild Swing",
+    cost: 1,
+    requiresTarget: true,
+    damage: 7,
+  },
+  ironWave: {
+    id: "ironWave",
+    name: "Iron Wave",
+    cost: 1,
+    requiresTarget: true,
+    damage: 4,
+    block: 4,
+  },
+  shieldWall: {
+    id: "shieldWall",
+    name: "Shield Wall",
+    cost: 2,
+    requiresTarget: false,
+    block: 12,
+  },
+  slice: {
+    id: "slice",
+    name: "Slice",
+    cost: 0,
+    requiresTarget: true,
+    damage: 4,
+  },
+  bodySlam: {
+    id: "bodySlam",
+    name: "Body Slam",
+    cost: 1,
+    requiresTarget: true,
+    damage: 5,
+  },
+  brace: {
+    id: "brace",
+    name: "Brace",
+    cost: 0,
+    requiresTarget: false,
+    block: 3,
+  },
 };
 
 export const SLAY_LIKE_ENEMY_DEFINITIONS: Readonly<Record<string, SlayLikeEnemyDefinition>> = {
@@ -142,16 +222,37 @@ export const SLAY_LIKE_ENEMY_DEFINITIONS: Readonly<Record<string, SlayLikeEnemyD
     block: 0,
     intentDamage: 6,
   },
+  acidSlime: {
+    id: "acidSlime",
+    objectId: "enemy-acid-slime",
+    name: "Acid Slime",
+    hp: 10,
+    block: 0,
+    intentDamage: 5,
+  },
+};
+
+export const SLAY_LIKE_RELIC_DEFINITIONS: Readonly<Record<string, SlayLikeRelicDefinition>> = {
+  burningBlood: {
+    id: "burningBlood",
+    objectId: "relic-burning-blood",
+    name: "Burning Blood",
+    description: "Starter relic placeholder for encounter-completion healing rules.",
+  },
 };
 
 export const SLAY_LIKE_REWARD_DRAFT: readonly SlayLikeRewardCard[] = [
   {
-    objectId: "reward-card-strike",
-    definitionId: "strike",
+    objectId: "reward-card-heavy-strike",
+    definitionId: "heavyStrike",
   },
   {
-    objectId: "reward-card-defend",
-    definitionId: "defend",
+    objectId: "reward-card-iron-wave",
+    definitionId: "ironWave",
+  },
+  {
+    objectId: "reward-card-brace",
+    definitionId: "brace",
   },
 ];
 
@@ -195,11 +296,19 @@ export function createSlayLikeEncounter(input: CreateSlayLikeEncounterInput): Ga
     state,
     createZone({ id: SLAY_LIKE_ZONES.playArea, kind: "play", ownerId: playerId }),
   );
+  state = putZone(
+    state,
+    createZone({ id: SLAY_LIKE_ZONES.relic, kind: "custom", ownerId: playerId }),
+  );
   state = putZone(state, createZone({ id: SLAY_LIKE_ZONES.enemy, kind: "enemy" }));
   state = putZone(state, createZone({ id: SLAY_LIKE_ZONES.reward, kind: "reward" }));
 
   for (const card of input.starterDeck ?? createDefaultStarterDeck()) {
     state = putGameObjectInZone(state, createStarterCardObject(card, playerId));
+  }
+
+  for (const relic of input.relics ?? createDefaultRelics()) {
+    state = putGameObjectInZone(state, createRelicObject(relic, playerId));
   }
 
   for (const enemy of input.enemies ?? createDefaultEnemies()) {
@@ -460,6 +569,15 @@ export function createDefaultEnemies(): readonly SlayLikeEnemyDefinition[] {
   return [jawWorm];
 }
 
+export function createDefaultRelics(): readonly SlayLikeRelicDefinition[] {
+  const burningBlood = SLAY_LIKE_RELIC_DEFINITIONS.burningBlood;
+  if (!burningBlood) {
+    throw new Error("Missing default Slay-like relic definition: burningBlood");
+  }
+
+  return [burningBlood];
+}
+
 function createStarterCardObject(card: SlayLikeStarterCard, ownerId: PlayerId): GameObject {
   const definition = SLAY_LIKE_CARD_DEFINITIONS[card.definitionId];
   if (!definition) {
@@ -489,6 +607,20 @@ function createEnemyObject(enemy: SlayLikeEnemyDefinition): GameObject {
       hp: enemy.hp,
       block: enemy.block,
       intentDamage: enemy.intentDamage,
+    },
+  });
+}
+
+function createRelicObject(relic: SlayLikeRelicDefinition, ownerId: PlayerId): GameObject {
+  return createGameObject({
+    id: relic.objectId,
+    definitionId: relic.id,
+    ownerId,
+    zoneId: SLAY_LIKE_ZONES.relic,
+    tags: ["relic"],
+    attributes: {
+      name: relic.name,
+      description: relic.description,
     },
   });
 }

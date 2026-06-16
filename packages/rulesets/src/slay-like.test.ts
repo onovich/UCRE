@@ -2,9 +2,12 @@ import { executeCommand } from "@ucre/core";
 import { describe, expect, it } from "vitest";
 
 import {
+  SLAY_LIKE_CARD_DEFINITIONS,
   SLAY_LIKE_COMMANDS,
+  SLAY_LIKE_ENEMY_DEFINITIONS,
   SLAY_LIKE_EVENTS,
   SLAY_LIKE_PHASES,
+  SLAY_LIKE_RELIC_DEFINITIONS,
   SLAY_LIKE_RESOURCES,
   SLAY_LIKE_ZONES,
   createSlayLikeCommandRegistry,
@@ -29,9 +32,17 @@ describe("slay-like encounter scaffold", () => {
       "defend-2",
     ]);
     expect(state.zones[SLAY_LIKE_ZONES.hand]?.objectIds).toEqual([]);
+    expect(state.zones[SLAY_LIKE_ZONES.relic]?.objectIds).toEqual(["relic-burning-blood"]);
+    expect(state.objects["relic-burning-blood"]?.definitionId).toBe("burningBlood");
     expect(state.zones[SLAY_LIKE_ZONES.enemy]?.kind).toBe("enemy");
     expect(state.zones[SLAY_LIKE_ZONES.enemy]?.objectIds).toEqual(["enemy-jaw-worm"]);
     expect(state.objects["enemy-jaw-worm"]?.attributes.hp).toBe(12);
+  });
+
+  it("defines the Phase 2 sample cards, enemies, and starter relic", () => {
+    expect(Object.keys(SLAY_LIKE_CARD_DEFINITIONS)).toHaveLength(12);
+    expect(Object.keys(SLAY_LIKE_ENEMY_DEFINITIONS).sort()).toEqual(["acidSlime", "jawWorm"]);
+    expect(Object.keys(SLAY_LIKE_RELIC_DEFINITIONS)).toEqual(["burningBlood"]);
   });
 
   it("draws cards through the ruleset command registry and core pipeline", () => {
@@ -355,8 +366,9 @@ describe("slay-like encounter scaffold", () => {
     expect(secondStrike.state.zones[SLAY_LIKE_ZONES.enemy]?.objectIds).toEqual([]);
     expect(secondStrike.state.phase).toBe(SLAY_LIKE_PHASES.reward);
     expect(secondStrike.state.zones[SLAY_LIKE_ZONES.reward]?.objectIds).toEqual([
-      "reward-card-strike",
-      "reward-card-defend",
+      "reward-card-heavy-strike",
+      "reward-card-iron-wave",
+      "reward-card-brace",
     ]);
     expect(secondStrike.events.map((event) => event.type)).toContain(
       SLAY_LIKE_EVENTS.rewardDraftOpened,
@@ -369,7 +381,7 @@ describe("slay-like encounter scaffold", () => {
         type: SLAY_LIKE_COMMANDS.chooseReward,
         playerId: "player-1",
         payload: {
-          rewardObjectId: "reward-card-defend",
+          rewardObjectId: "reward-card-iron-wave",
         },
       },
     });
@@ -384,12 +396,13 @@ describe("slay-like encounter scaffold", () => {
     expect(chooseReward.state.zones[SLAY_LIKE_ZONES.discardPile]?.objectIds).toEqual([
       "strike-1",
       "strike-2",
-      "reward-card-defend",
+      "reward-card-iron-wave",
     ]);
-    expect(chooseReward.state.objects["reward-card-defend"]?.zoneId).toBe(
+    expect(chooseReward.state.objects["reward-card-iron-wave"]?.zoneId).toBe(
       SLAY_LIKE_ZONES.discardPile,
     );
-    expect(chooseReward.state.objects["reward-card-strike"]).toBeUndefined();
+    expect(chooseReward.state.objects["reward-card-heavy-strike"]).toBeUndefined();
+    expect(chooseReward.state.objects["reward-card-brace"]).toBeUndefined();
     expect(chooseReward.events.map((event) => event.type)).toContain(
       SLAY_LIKE_EVENTS.encounterCompleted,
     );
@@ -407,7 +420,7 @@ describe("slay-like encounter scaffold", () => {
         type: SLAY_LIKE_COMMANDS.chooseReward,
         playerId: "player-1",
         payload: {
-          rewardObjectId: "reward-card-defend",
+          rewardObjectId: "reward-card-iron-wave",
         },
       },
     });

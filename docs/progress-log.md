@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 2 - First Ruleset Vertical Slice
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: expand Slay-like sample content with additional cards, a second enemy, and a starter relic.
+- Next recommended round: add a Slay-like completed-encounter replay fixture and replay-runner validation.
 
 ## Round Template
 
@@ -151,5 +151,15 @@ Notes:
 - Files changed: `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, `docs/adr/0011-slay-like-reward-completion.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/rulesets/src packages/core/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across `packages/core` and `packages/rulesets`.
 - Result: passed after fixing a strict optional HP read and formatting the ruleset file.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `46eda40 feat(rulesets): add slay like rewards`
 - Notes: Lethal card damage now destroys the final living enemy, opens fixed reward choices, moves the selected reward card into the discard pile, removes unchosen rewards, and reaches `complete` through command dispatch.
+
+### 2026-06-17 - Round P2R5
+
+- Phase: Phase 2 - First Ruleset Vertical Slice
+- Deliverable: expanded inline Slay-like sample content to twelve card definitions, two enemy definitions, one starter relic definition, a relic zone/object in encounter state, and richer reward choices.
+- Files changed: `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, `docs/adr/0012-slay-like-sample-content.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/rulesets/src packages/core/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across `packages/core` and `packages/rulesets`.
+- Result: passed.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: The expanded catalog remains inline until Phase 3 moves card, enemy, relic, and reward data through schema validation and compilation.
