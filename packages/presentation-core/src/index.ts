@@ -27,6 +27,85 @@ export type PresentationBeatKind =
 export type PresentationTrackStrategy = "sequence" | "kind" | "intent";
 export type PresentationDirectorStatus = "idle" | "playing" | "paused" | "complete";
 
+export type PresentationBeatProfile =
+  | MovePresentationBeatProfile
+  | DrawPresentationBeatProfile
+  | DiscardPresentationBeatProfile
+  | DamagePresentationBeatProfile
+  | DestroyPresentationBeatProfile
+  | ResourcePresentationBeatProfile
+  | CounterPresentationBeatProfile
+  | GenericPresentationBeatProfile;
+
+export interface BasePresentationBeatProfile {
+  readonly kind: PresentationBeatKind;
+  readonly sourceIntentType: string;
+}
+
+export interface MovePresentationBeatProfile extends BasePresentationBeatProfile {
+  readonly kind: "move";
+  readonly objectId?: string;
+  readonly fromZoneId?: string;
+  readonly toZoneId?: string;
+  readonly fromIndex?: number;
+  readonly toIndex?: number;
+}
+
+export interface DrawPresentationBeatProfile extends BasePresentationBeatProfile {
+  readonly kind: "draw";
+  readonly fromZoneId?: string;
+  readonly toZoneId?: string;
+  readonly requestedCount?: number;
+  readonly drawnCount?: number;
+  readonly drawnObjectIds?: readonly string[];
+}
+
+export interface DiscardPresentationBeatProfile extends BasePresentationBeatProfile {
+  readonly kind: "discard";
+  readonly objectId?: string;
+  readonly fromZoneId?: string;
+  readonly toZoneId?: string;
+}
+
+export interface DamagePresentationBeatProfile extends BasePresentationBeatProfile {
+  readonly kind: "damage";
+  readonly objectId?: string;
+  readonly amount?: number;
+  readonly blockedAmount?: number;
+  readonly hitPointLoss?: number;
+  readonly previousHitPoints?: number;
+  readonly nextHitPoints?: number;
+}
+
+export interface DestroyPresentationBeatProfile extends BasePresentationBeatProfile {
+  readonly kind: "destroy";
+  readonly objectId?: string;
+  readonly fromZoneId?: string;
+}
+
+export interface ResourcePresentationBeatProfile extends BasePresentationBeatProfile {
+  readonly kind: "resource";
+  readonly playerId?: string;
+  readonly resourceId?: string;
+  readonly previousValue?: number;
+  readonly nextValue?: number;
+  readonly delta?: number;
+}
+
+export interface CounterPresentationBeatProfile extends BasePresentationBeatProfile {
+  readonly kind: "counter";
+  readonly objectId?: string;
+  readonly counterId?: string;
+  readonly previousValue?: number;
+  readonly nextValue?: number;
+  readonly delta?: number;
+}
+
+export interface GenericPresentationBeatProfile extends BasePresentationBeatProfile {
+  readonly kind: "objective" | "generic";
+  readonly payload: JsonObject;
+}
+
 export interface PresentationBeat {
   readonly id: string;
   readonly intentId: string;
@@ -38,6 +117,7 @@ export interface PresentationBeat {
   readonly startTimeMs: number;
   readonly durationMs: number;
   readonly payload: JsonObject;
+  readonly profile: PresentationBeatProfile;
 }
 
 export interface BeatSchedulerConfig {
@@ -96,6 +176,7 @@ export function createBeatSchedule(
       startTimeMs: cursorMs,
       durationMs: defaultDurationMs,
       payload: intent.payload,
+      profile: createPresentationBeatProfile(intent),
     });
     cursorMs += defaultDurationMs + gapMs;
   }
@@ -153,6 +234,44 @@ export function setPresentationPlaybackRate(
   });
 }
 
+export function createPresentationBeatProfile(intent: PresentationIntent): PresentationBeatProfile {
+  const kind = classifyPresentationIntent(intent.type);
+
+  if (kind === "move") {
+    return createMoveProfile(intent);
+  }
+
+  if (kind === "draw") {
+    return createDrawProfile(intent);
+  }
+
+  if (kind === "discard") {
+    return createDiscardProfile(intent);
+  }
+
+  if (kind === "damage") {
+    return createDamageProfile(intent);
+  }
+
+  if (kind === "destroy") {
+    return createDestroyProfile(intent);
+  }
+
+  if (kind === "resource") {
+    return createResourceProfile(intent);
+  }
+
+  if (kind === "counter") {
+    return createCounterProfile(intent);
+  }
+
+  return {
+    kind,
+    sourceIntentType: intent.type,
+    payload: intent.payload,
+  };
+}
+
 export function classifyPresentationIntent(type: string): PresentationBeatKind {
   if (type === MOVE_OBJECT_INTENT_TYPE) {
     return "move";
@@ -187,6 +306,117 @@ export function classifyPresentationIntent(type: string): PresentationBeatKind {
   }
 
   return "generic";
+}
+
+function createMoveProfile(intent: PresentationIntent): MovePresentationBeatProfile {
+  const objectId = readString(intent.payload, "objectId");
+  const fromZoneId = readString(intent.payload, "fromZoneId");
+  const toZoneId = readString(intent.payload, "toZoneId");
+  const fromIndex = readNumber(intent.payload, "fromIndex");
+  const toIndex = readNumber(intent.payload, "toIndex");
+  return {
+    kind: "move",
+    sourceIntentType: intent.type,
+    ...(objectId !== undefined ? { objectId } : {}),
+    ...(fromZoneId !== undefined ? { fromZoneId } : {}),
+    ...(toZoneId !== undefined ? { toZoneId } : {}),
+    ...(fromIndex !== undefined ? { fromIndex } : {}),
+    ...(toIndex !== undefined ? { toIndex } : {}),
+  };
+}
+
+function createDrawProfile(intent: PresentationIntent): DrawPresentationBeatProfile {
+  const fromZoneId = readString(intent.payload, "fromZoneId");
+  const toZoneId = readString(intent.payload, "toZoneId");
+  const requestedCount = readNumber(intent.payload, "requestedCount");
+  const drawnCount = readNumber(intent.payload, "drawnCount");
+  const drawnObjectIds = readStringArray(intent.payload, "drawnObjectIds");
+  return {
+    kind: "draw",
+    sourceIntentType: intent.type,
+    ...(fromZoneId !== undefined ? { fromZoneId } : {}),
+    ...(toZoneId !== undefined ? { toZoneId } : {}),
+    ...(requestedCount !== undefined ? { requestedCount } : {}),
+    ...(drawnCount !== undefined ? { drawnCount } : {}),
+    ...(drawnObjectIds !== undefined ? { drawnObjectIds } : {}),
+  };
+}
+
+function createDiscardProfile(intent: PresentationIntent): DiscardPresentationBeatProfile {
+  const objectId = readString(intent.payload, "objectId");
+  const fromZoneId = readString(intent.payload, "fromZoneId");
+  const toZoneId = readString(intent.payload, "toZoneId");
+  return {
+    kind: "discard",
+    sourceIntentType: intent.type,
+    ...(objectId !== undefined ? { objectId } : {}),
+    ...(fromZoneId !== undefined ? { fromZoneId } : {}),
+    ...(toZoneId !== undefined ? { toZoneId } : {}),
+  };
+}
+
+function createDamageProfile(intent: PresentationIntent): DamagePresentationBeatProfile {
+  const objectId = readString(intent.payload, "objectId");
+  const amount = readNumber(intent.payload, "amount");
+  const blockedAmount = readNumber(intent.payload, "blockedAmount");
+  const hitPointLoss = readNumber(intent.payload, "hitPointLoss");
+  const previousHitPoints = readNumber(intent.payload, "previousHitPoints");
+  const nextHitPoints = readNumber(intent.payload, "nextHitPoints");
+  return {
+    kind: "damage",
+    sourceIntentType: intent.type,
+    ...(objectId !== undefined ? { objectId } : {}),
+    ...(amount !== undefined ? { amount } : {}),
+    ...(blockedAmount !== undefined ? { blockedAmount } : {}),
+    ...(hitPointLoss !== undefined ? { hitPointLoss } : {}),
+    ...(previousHitPoints !== undefined ? { previousHitPoints } : {}),
+    ...(nextHitPoints !== undefined ? { nextHitPoints } : {}),
+  };
+}
+
+function createDestroyProfile(intent: PresentationIntent): DestroyPresentationBeatProfile {
+  const objectId = readString(intent.payload, "objectId");
+  const fromZoneId = readString(intent.payload, "fromZoneId");
+  return {
+    kind: "destroy",
+    sourceIntentType: intent.type,
+    ...(objectId !== undefined ? { objectId } : {}),
+    ...(fromZoneId !== undefined ? { fromZoneId } : {}),
+  };
+}
+
+function createResourceProfile(intent: PresentationIntent): ResourcePresentationBeatProfile {
+  const playerId = readString(intent.payload, "playerId");
+  const resourceId = readString(intent.payload, "resourceId");
+  const previousValue = readNumber(intent.payload, "previousValue");
+  const nextValue = readNumber(intent.payload, "nextValue");
+  const delta = readNumber(intent.payload, "delta");
+  return {
+    kind: "resource",
+    sourceIntentType: intent.type,
+    ...(playerId !== undefined ? { playerId } : {}),
+    ...(resourceId !== undefined ? { resourceId } : {}),
+    ...(previousValue !== undefined ? { previousValue } : {}),
+    ...(nextValue !== undefined ? { nextValue } : {}),
+    ...(delta !== undefined ? { delta } : {}),
+  };
+}
+
+function createCounterProfile(intent: PresentationIntent): CounterPresentationBeatProfile {
+  const objectId = readString(intent.payload, "objectId");
+  const counterId = readString(intent.payload, "counterId");
+  const previousValue = readNumber(intent.payload, "previousValue");
+  const nextValue = readNumber(intent.payload, "nextValue");
+  const delta = readNumber(intent.payload, "delta");
+  return {
+    kind: "counter",
+    sourceIntentType: intent.type,
+    ...(objectId !== undefined ? { objectId } : {}),
+    ...(counterId !== undefined ? { counterId } : {}),
+    ...(previousValue !== undefined ? { previousValue } : {}),
+    ...(nextValue !== undefined ? { nextValue } : {}),
+    ...(delta !== undefined ? { delta } : {}),
+  };
 }
 
 function createTrackId(
@@ -230,6 +460,23 @@ function normalizeNonNegativeInteger(value: number | undefined, fallback: number
   }
 
   return value;
+}
+
+function readString(payload: JsonObject, key: string): string | undefined {
+  const value = payload[key];
+  return typeof value === "string" ? value : undefined;
+}
+
+function readNumber(payload: JsonObject, key: string): number | undefined {
+  const value = payload[key];
+  return typeof value === "number" ? value : undefined;
+}
+
+function readStringArray(payload: JsonObject, key: string): readonly string[] | undefined {
+  const value = payload[key];
+  return Array.isArray(value) && value.every((entry) => typeof entry === "string")
+    ? value
+    : undefined;
 }
 
 function normalizePositiveNumber(value: number | undefined, fallback: number): number {

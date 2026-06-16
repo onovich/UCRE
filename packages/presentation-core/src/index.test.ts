@@ -1,6 +1,7 @@
 import {
   DAMAGE_DEALT_INTENT_TYPE,
   MOVE_OBJECT_INTENT_TYPE,
+  OBJECT_DESTROYED_INTENT_TYPE,
   RESOURCE_CHANGED_INTENT_TYPE,
 } from "@ucre/core";
 import { describe, expect, it } from "vitest";
@@ -127,5 +128,72 @@ describe("presentation-core beat scheduler", () => {
     expect(classifyPresentationIntent(DAMAGE_DEALT_INTENT_TYPE)).toBe("damage");
     expect(classifyPresentationIntent("ObjectiveSucceeded")).toBe("objective");
     expect(classifyPresentationIntent("UnknownThing")).toBe("generic");
+  });
+
+  it("normalizes move, damage, and destroy profiles for renderer adapters", () => {
+    const schedule = createBeatSchedule([
+      {
+        id: "intent-move-1",
+        type: MOVE_OBJECT_INTENT_TYPE,
+        eventId: "event-move-1",
+        payload: {
+          objectId: "strike-1",
+          fromZoneId: "player.drawPile",
+          toZoneId: "player.hand",
+          fromIndex: 0,
+          toIndex: 4,
+        },
+      },
+      {
+        id: "intent-damage-1",
+        type: DAMAGE_DEALT_INTENT_TYPE,
+        eventId: "event-damage-1",
+        payload: {
+          objectId: "jaw-worm",
+          amount: 6,
+          blockedAmount: 2,
+          hitPointLoss: 4,
+          previousHitPoints: 40,
+          nextHitPoints: 36,
+        },
+      },
+      {
+        id: "intent-destroy-1",
+        type: OBJECT_DESTROYED_INTENT_TYPE,
+        eventId: "event-destroy-1",
+        payload: {
+          objectId: "jaw-worm",
+          fromZoneId: "enemy.active",
+        },
+      },
+    ]);
+
+    expect(schedule.beats.map((beat) => beat.profile)).toEqual([
+      {
+        kind: "move",
+        sourceIntentType: MOVE_OBJECT_INTENT_TYPE,
+        objectId: "strike-1",
+        fromZoneId: "player.drawPile",
+        toZoneId: "player.hand",
+        fromIndex: 0,
+        toIndex: 4,
+      },
+      {
+        kind: "damage",
+        sourceIntentType: DAMAGE_DEALT_INTENT_TYPE,
+        objectId: "jaw-worm",
+        amount: 6,
+        blockedAmount: 2,
+        hitPointLoss: 4,
+        previousHitPoints: 40,
+        nextHitPoints: 36,
+      },
+      {
+        kind: "destroy",
+        sourceIntentType: OBJECT_DESTROYED_INTENT_TYPE,
+        objectId: "jaw-worm",
+        fromZoneId: "enemy.active",
+      },
+    ]);
   });
 });

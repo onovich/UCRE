@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 6 - Presentation Director
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add renderer-neutral move/damage/destroy beat profiles.
+- Next recommended round: add GSAP timeline adapter scaffold.
 
 ## Round Template
 
@@ -311,5 +311,15 @@ Notes:
 - Files changed: `packages/presentation-core/src/index.ts`, `packages/presentation-core/src/index.test.ts`, `packages/presentation-core/package.json`, `packages/presentation-core/tsconfig.json`, `pnpm-lock.yaml`, `docs/adr/0025-presentation-beat-scheduler-contracts.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/presentation-core/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/presentation-core build`, `corepack pnpm --filter @ucre/theater-three build`, full project validation, and architecture boundary searches confirming presentation-core has no DOM, renderer, frame timing, random, or direct state mutation paths.
 - Result: passed after running `corepack pnpm install` to refresh local workspace symlinks for the new `@ucre/core` dependency.
-- Commit: pending.
+- Commit: `407b8df feat(presentation): add beat scheduler contracts`
 - Notes: Phase 6 starts with pure presentation data and scheduler contracts; no renderer, DOM, GSAP, or rule mutation path is introduced.
+
+### 2026-06-17 - Round P6R2
+
+- Phase: Phase 6 - Presentation Director
+- Deliverable: added renderer-neutral presentation beat profiles for move, draw, discard, damage, destroy, resource, counter, objective, and generic intents, with focused tests for move/damage/destroy adapter payloads.
+- Files changed: `packages/presentation-core/src/index.ts`, `packages/presentation-core/src/index.test.ts`, `docs/adr/0026-renderer-neutral-beat-profiles.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/presentation-core/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/presentation-core build`, full project validation, and architecture boundary searches confirming profiles add no DOM, renderer, frame timing, random, or direct state mutation paths.
+- Result: passed.
+- Commit: pending.
+- Notes: Profiles are derived from immutable core `PresentationIntent` payloads and do not introduce renderer dependencies.
