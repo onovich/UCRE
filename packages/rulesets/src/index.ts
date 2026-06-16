@@ -11,3 +11,4 @@ export function createRulesetsPackageIdentity(): RulesetsPackageIdentity {
 }
 
 export * from "./slay-like.js";
+export * from "./blackjack-like.js";

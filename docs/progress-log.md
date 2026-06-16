@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 8 - Ruleset Pressure Tests
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add blackjack-like zones, resources, and phase setup.
+- Next recommended round: add blackjack-like hit, stand, and dealer policy commands.
 
 ## Round Template
 
@@ -421,5 +421,15 @@ Notes:
 - Files changed: `packages/run-dexie/package.json`, `packages/run-dexie/tsconfig.json`, `packages/run-dexie/src/short-run-e2e.test.ts`, `pnpm-lock.yaml`, and this progress log.
 - Validation: `corepack pnpm install`, `corepack pnpm test packages/run-dexie/src/short-run-e2e.test.ts`, `corepack pnpm --filter @ucre/run-dexie build`, Phase 7 architecture boundary searches for Dexie isolation and nondeterminism, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after correcting the E2E assertion to use the save package `currentRunState` contract and formatting the new test.
-- Commit: pending.
+- Commit: `54608c0 test(run): add short run e2e`
 - Notes: Phase 7 exit gate is locally satisfied: a minimal run can start, traverse into an encounter, complete via command replay, choose a reward, settle victory, persist, reload, and replay to identical hashes.
+
+### 2026-06-17 - Round P8R1
+
+- Phase: Phase 8 - Ruleset Pressure Tests
+- Deliverable: scaffolded the blackjack-like ruleset setup with public phase, zone, resource, flag, rank, suit, standard shoe, and round initialization contracts.
+- Files changed: `packages/rulesets/src/blackjack-like.ts`, `packages/rulesets/src/blackjack-like.test.ts`, `packages/rulesets/src/index.ts`, `docs/adr/0034-blackjack-like-ruleset-scaffold.md`, and this progress log.
+- Validation: `corepack pnpm test packages/rulesets/src/blackjack-like.test.ts`, `corepack pnpm --filter @ucre/rulesets build`, Phase 8 architecture searches for nondeterminism, browser/presentation imports, and premature blackjack leakage into core/replay/run/content packages, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after widening the setup state variable to `GameState` for strict TypeScript project builds.
+- Commit: pending.
+- Notes: Blackjack-like setup now proves the shared core can represent an ordered dealer shoe, player/dealer hands, discard and wager zones, player chips/current bet/suspicion resources, and deterministic state hashes without adding new core mechanics.
