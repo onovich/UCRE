@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 2 - First Ruleset Vertical Slice
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add encounter completion, reward draft choices, and deck modification.
+- Next recommended round: expand Slay-like sample content with additional cards, a second enemy, and a starter relic.
 
 ## Round Template
 
@@ -141,5 +141,15 @@ Notes:
 - Files changed: `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, `docs/adr/0010-slay-like-turn-effects.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/rulesets/src packages/core/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across `packages/core` and `packages/rulesets`.
 - Result: passed after tightening custom Slay-like effect payload failures to return `INVALID_EFFECT_PAYLOAD` instead of throwing.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `684a2fa feat(rulesets): add slay like turn flow`
 - Notes: `slay.endTurn` discards the hand, resolves living enemy intents against player block/HP, advances through enemy turn, resets energy/block, starts the next player turn, and draws the next hand through command dispatch.
+
+### 2026-06-17 - Round P2R4
+
+- Phase: Phase 2 - First Ruleset Vertical Slice
+- Deliverable: added final-enemy defeat handling, deterministic reward draft opening, `slay.chooseReward`, deck modification through reward claim, and encounter completion.
+- Files changed: `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, `docs/adr/0011-slay-like-reward-completion.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/rulesets/src packages/core/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across `packages/core` and `packages/rulesets`.
+- Result: passed after fixing a strict optional HP read and formatting the ruleset file.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: Lethal card damage now destroys the final living enemy, opens fixed reward choices, moves the selected reward card into the discard pile, removes unchosen rewards, and reaches `complete` through command dispatch.

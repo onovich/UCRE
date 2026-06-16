@@ -1,5 +1,6 @@
 import {
   DEAL_DAMAGE_EFFECT_TYPE,
+  DESTROY_EFFECT_TYPE,
   DISCARD_EFFECT_TYPE,
   DRAW_CARDS_EFFECT_TYPE,
   GAIN_RESOURCE_EFFECT_TYPE,
@@ -61,16 +62,21 @@ export const SLAY_LIKE_COMMANDS = {
   drawCards: "slay.drawCards",
   playCard: "slay.playCard",
   endTurn: "slay.endTurn",
+  chooseReward: "slay.chooseReward",
 } as const;
 
 export const SLAY_LIKE_EFFECTS = {
   resolveEnemyIntent: "SlayResolveEnemyIntent",
   startPlayerTurn: "SlayStartPlayerTurn",
+  openRewardDraft: "SlayOpenRewardDraft",
+  completeEncounter: "SlayCompleteEncounter",
 } as const;
 
 export const SLAY_LIKE_EVENTS = {
   enemyIntentResolved: "SlayEnemyIntentResolved",
   playerTurnStarted: "SlayPlayerTurnStarted",
+  rewardDraftOpened: "SlayRewardDraftOpened",
+  encounterCompleted: "SlayEncounterCompleted",
 } as const;
 
 export interface SlayLikeCardDefinition {
@@ -84,6 +90,11 @@ export interface SlayLikeCardDefinition {
 
 export interface SlayLikeStarterCard {
   readonly id: string;
+  readonly definitionId: string;
+}
+
+export interface SlayLikeRewardCard {
+  readonly objectId: string;
   readonly definitionId: string;
 }
 
@@ -132,6 +143,17 @@ export const SLAY_LIKE_ENEMY_DEFINITIONS: Readonly<Record<string, SlayLikeEnemyD
     intentDamage: 6,
   },
 };
+
+export const SLAY_LIKE_REWARD_DRAFT: readonly SlayLikeRewardCard[] = [
+  {
+    objectId: "reward-card-strike",
+    definitionId: "strike",
+  },
+  {
+    objectId: "reward-card-defend",
+    definitionId: "defend",
+  },
+];
 
 export function createSlayLikeEncounter(input: CreateSlayLikeEncounterInput): GameState {
   const playerId = input.playerId ?? "player-1";
@@ -250,16 +272,38 @@ export function createSlayLikeCommandRegistry(): CommandRegistry {
             },
           },
         ];
+        const postCardEffects: Effect[] = [];
 
         if (definition.damage) {
+          const targetObjectId = readCommandString(command, "targetObjectId");
           effects.push({
             id: "deal-damage",
             type: DEAL_DAMAGE_EFFECT_TYPE,
             payload: {
-              targetObjectId: readCommandString(command, "targetObjectId"),
+              targetObjectId,
               amount: definition.damage,
             },
           });
+
+          if (willDefeatTarget(_state, targetObjectId, definition.damage)) {
+            postCardEffects.push({
+              id: "destroy-defeated-enemy",
+              type: DESTROY_EFFECT_TYPE,
+              payload: {
+                objectId: targetObjectId,
+              },
+            });
+
+            if (isLastLivingEnemy(_state, targetObjectId)) {
+              postCardEffects.push({
+                id: "open-reward-draft",
+                type: SLAY_LIKE_EFFECTS.openRewardDraft,
+                payload: {
+                  playerId: command.playerId,
+                },
+              });
+            }
+          }
         }
 
         if (definition.block) {
@@ -282,6 +326,7 @@ export function createSlayLikeCommandRegistry(): CommandRegistry {
             toZoneId: SLAY_LIKE_ZONES.discardPile,
           },
         });
+        effects.push(...postCardEffects);
 
         return effects;
       },
@@ -328,6 +373,43 @@ export function createSlayLikeCommandRegistry(): CommandRegistry {
         ];
       },
     },
+    [SLAY_LIKE_COMMANDS.chooseReward]: {
+      validate: (state, command) => validateChooseRewardCommand(state, command),
+      getEffects: (state, command) => {
+        const rewardObjectId = readCommandString(command, "rewardObjectId");
+        const rewardObjectIds = state.zones[SLAY_LIKE_ZONES.reward]?.objectIds ?? [];
+
+        return [
+          {
+            id: "move-reward-to-discard",
+            type: MOVE_OBJECT_EFFECT_TYPE,
+            payload: {
+              objectId: rewardObjectId,
+              toZoneId: SLAY_LIKE_ZONES.discardPile,
+            },
+          },
+          ...rewardObjectIds
+            .filter((objectId) => objectId !== rewardObjectId)
+            .map(
+              (objectId, index): Effect => ({
+                id: `destroy-unchosen-reward-${index}`,
+                type: DESTROY_EFFECT_TYPE,
+                payload: {
+                  objectId,
+                },
+              }),
+            ),
+          {
+            id: "complete-encounter",
+            type: SLAY_LIKE_EFFECTS.completeEncounter,
+            payload: {
+              playerId: command.playerId,
+              rewardObjectId,
+            },
+          },
+        ];
+      },
+    },
   };
 }
 
@@ -338,6 +420,10 @@ export function createSlayLikeEffectRegistry(): EffectRegistry {
       resolveEnemyIntent(state, effect, context.commandId),
     [SLAY_LIKE_EFFECTS.startPlayerTurn]: (state, effect, context) =>
       startPlayerTurn(state, effect, context.commandId),
+    [SLAY_LIKE_EFFECTS.openRewardDraft]: (state, effect, context) =>
+      openRewardDraft(state, effect, context.commandId),
+    [SLAY_LIKE_EFFECTS.completeEncounter]: (state, effect, context) =>
+      completeEncounter(state, effect, context.commandId),
   };
 }
 
@@ -403,6 +489,24 @@ function createEnemyObject(enemy: SlayLikeEnemyDefinition): GameObject {
       hp: enemy.hp,
       block: enemy.block,
       intentDamage: enemy.intentDamage,
+    },
+  });
+}
+
+function createRewardCardObject(card: SlayLikeRewardCard, ownerId: PlayerId): GameObject {
+  const definition = SLAY_LIKE_CARD_DEFINITIONS[card.definitionId];
+  if (!definition) {
+    throw new Error(`Unknown Slay-like reward card definition: ${card.definitionId}`);
+  }
+
+  return createGameObject({
+    id: card.objectId,
+    definitionId: card.definitionId,
+    ownerId,
+    zoneId: SLAY_LIKE_ZONES.reward,
+    tags: ["card", "reward"],
+    attributes: {
+      cost: definition.cost,
     },
   });
 }
@@ -488,6 +592,55 @@ function validatePlayCardCommand(state: GameState, command: Command) {
         });
       }
     }
+  }
+
+  return errors;
+}
+
+function validateChooseRewardCommand(state: GameState, command: Command): readonly RuleError[] {
+  const errors: RuleError[] = [];
+
+  if (state.phase !== SLAY_LIKE_PHASES.reward) {
+    errors.push({
+      code: "SLAY_NOT_REWARD_PHASE",
+      message: "Rewards can only be chosen during the reward phase.",
+      details: {
+        commandId: command.id,
+        phase: state.phase,
+      },
+    });
+  }
+
+  const rewardObjectId = readOptionalCommandString(command, "rewardObjectId");
+  if (!rewardObjectId) {
+    errors.push({
+      code: "SLAY_REWARD_REQUIRED",
+      message: "Choosing a reward requires a reward object id.",
+      details: {
+        commandId: command.id,
+      },
+    });
+  }
+
+  const rewardZone = state.zones[SLAY_LIKE_ZONES.reward];
+  if (!rewardZone) {
+    errors.push({
+      code: "SLAY_ZONE_NOT_FOUND",
+      message: `Required Slay-like zone ${SLAY_LIKE_ZONES.reward} does not exist.`,
+      details: {
+        commandId: command.id,
+        zoneId: SLAY_LIKE_ZONES.reward,
+      },
+    });
+  } else if (rewardObjectId && !rewardZone.objectIds.includes(rewardObjectId)) {
+    errors.push({
+      code: "SLAY_REWARD_NOT_FOUND",
+      message: `Reward ${rewardObjectId} is not available.`,
+      details: {
+        commandId: command.id,
+        rewardObjectId,
+      },
+    });
   }
 
   return errors;
@@ -685,6 +838,153 @@ function startPlayerTurn(
   };
 
   return singleEventSuccess(nextState, event);
+}
+
+function openRewardDraft(
+  state: GameState,
+  effect: Effect,
+  commandId: Command["id"] | undefined,
+): RuleResult {
+  let playerId: string;
+  try {
+    playerId = readEffectString(effect, "playerId");
+  } catch (error) {
+    return invalidEffectPayload(state, effect, error);
+  }
+
+  const rewardZone = state.zones[SLAY_LIKE_ZONES.reward];
+  if (!rewardZone) {
+    return failure(state, {
+      code: "SLAY_ZONE_NOT_FOUND",
+      message: `Required Slay-like zone ${SLAY_LIKE_ZONES.reward} does not exist.`,
+      details: {
+        effectId: effect.id,
+        zoneId: SLAY_LIKE_ZONES.reward,
+      },
+    });
+  }
+
+  if (rewardZone.objectIds.length > 0) {
+    return failure(state, {
+      code: "SLAY_REWARD_DRAFT_ALREADY_OPEN",
+      message: "Cannot open a Slay-like reward draft while rewards are already available.",
+      details: {
+        effectId: effect.id,
+        rewardObjectIds: [...rewardZone.objectIds],
+      },
+    });
+  }
+
+  for (const rewardCard of SLAY_LIKE_REWARD_DRAFT) {
+    if (state.objects[rewardCard.objectId]) {
+      return failure(state, {
+        code: "SLAY_REWARD_OBJECT_EXISTS",
+        message: `Reward object ${rewardCard.objectId} already exists.`,
+        details: {
+          effectId: effect.id,
+          rewardObjectId: rewardCard.objectId,
+        },
+      });
+    }
+  }
+
+  let nextState: GameState = {
+    ...state,
+    phase: SLAY_LIKE_PHASES.reward,
+  };
+
+  for (const rewardCard of SLAY_LIKE_REWARD_DRAFT) {
+    nextState = putGameObjectInZone(nextState, createRewardCardObject(rewardCard, playerId));
+  }
+
+  const event: RuleEvent = {
+    id: eventIdFor(commandId, effect),
+    type: SLAY_LIKE_EVENTS.rewardDraftOpened,
+    payload: {
+      playerId,
+      previousPhase: state.phase,
+      nextPhase: SLAY_LIKE_PHASES.reward,
+      rewardObjectIds: SLAY_LIKE_REWARD_DRAFT.map((rewardCard) => rewardCard.objectId),
+      rewardDefinitionIds: SLAY_LIKE_REWARD_DRAFT.map((rewardCard) => rewardCard.definitionId),
+    },
+    ...eventCause(commandId, effect),
+  };
+
+  return singleEventSuccess(nextState, event);
+}
+
+function completeEncounter(
+  state: GameState,
+  effect: Effect,
+  commandId: Command["id"] | undefined,
+): RuleResult {
+  let playerId: string;
+  let rewardObjectId: string;
+  try {
+    playerId = readEffectString(effect, "playerId");
+    rewardObjectId = readEffectString(effect, "rewardObjectId");
+  } catch (error) {
+    return invalidEffectPayload(state, effect, error);
+  }
+
+  const nextState: GameState = {
+    ...state,
+    phase: SLAY_LIKE_PHASES.complete,
+  };
+  const event: RuleEvent = {
+    id: eventIdFor(commandId, effect),
+    type: SLAY_LIKE_EVENTS.encounterCompleted,
+    payload: {
+      playerId,
+      rewardObjectId,
+      previousPhase: state.phase,
+      nextPhase: SLAY_LIKE_PHASES.complete,
+    },
+    ...eventCause(commandId, effect),
+  };
+
+  return singleEventSuccess(nextState, event);
+}
+
+function willDefeatTarget(state: GameState, targetObjectId: string, damage: number): boolean {
+  const target = state.objects[targetObjectId];
+  if (!target || !isEnemyObject(state, targetObjectId)) {
+    return false;
+  }
+
+  const hitPoints = readNumberAttribute(target, "hp");
+  if (hitPoints === undefined) {
+    return false;
+  }
+
+  const block = readNumberAttribute(target, "block") ?? 0;
+  const hitPointLoss = Math.max(0, damage - block);
+
+  return Math.max(0, hitPoints - hitPointLoss) === 0;
+}
+
+function isLastLivingEnemy(state: GameState, targetObjectId: string): boolean {
+  if (!isEnemyObject(state, targetObjectId)) {
+    return false;
+  }
+
+  return livingEnemyIds(state).every((enemyObjectId) => enemyObjectId === targetObjectId);
+}
+
+function livingEnemyIds(state: GameState): readonly string[] {
+  const enemyZone = state.zones[SLAY_LIKE_ZONES.enemy];
+  if (!enemyZone) {
+    return [];
+  }
+
+  return enemyZone.objectIds.filter((enemyObjectId) => {
+    const enemy = state.objects[enemyObjectId];
+    return (enemy ? (readNumberAttribute(enemy, "hp") ?? 0) : 0) > 0;
+  });
+}
+
+function isEnemyObject(state: GameState, objectId: string): boolean {
+  return state.zones[SLAY_LIKE_ZONES.enemy]?.objectIds.includes(objectId) ?? false;
 }
 
 function failure(state: GameState, error: RuleError): RuleResult {

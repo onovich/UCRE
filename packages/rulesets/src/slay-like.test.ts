@@ -289,4 +289,134 @@ describe("slay-like encounter scaffold", () => {
 
     expect(result.errors[0]?.code).toBe("SLAY_NOT_PLAYER_TURN");
   });
+
+  it("opens a reward draft after defeating the final enemy and claims a card reward", () => {
+    const state = createSlayLikeEncounter({
+      gameId: "slay-1",
+      seed: "seed-1",
+    });
+    const draw = executeSlayLikeCommand({
+      state,
+      command: {
+        id: "command-1",
+        type: SLAY_LIKE_COMMANDS.drawCards,
+        playerId: "player-1",
+        payload: {
+          count: 3,
+        },
+      },
+    });
+
+    expect(draw.ok).toBe(true);
+    if (!draw.ok) {
+      throw new Error("Draw command unexpectedly failed.");
+    }
+
+    const firstStrike = executeSlayLikeCommand({
+      state: draw.state,
+      command: {
+        id: "command-2",
+        type: SLAY_LIKE_COMMANDS.playCard,
+        playerId: "player-1",
+        payload: {
+          cardId: "strike-1",
+          targetObjectId: "enemy-jaw-worm",
+        },
+      },
+    });
+
+    expect(firstStrike.ok).toBe(true);
+    if (!firstStrike.ok) {
+      throw new Error("First Strike command unexpectedly failed.");
+    }
+
+    expect(firstStrike.state.objects["enemy-jaw-worm"]?.attributes.hp).toBe(6);
+    expect(firstStrike.state.phase).toBe(SLAY_LIKE_PHASES.playerTurn);
+
+    const secondStrike = executeSlayLikeCommand({
+      state: firstStrike.state,
+      command: {
+        id: "command-3",
+        type: SLAY_LIKE_COMMANDS.playCard,
+        playerId: "player-1",
+        payload: {
+          cardId: "strike-2",
+          targetObjectId: "enemy-jaw-worm",
+        },
+      },
+    });
+
+    expect(secondStrike.ok).toBe(true);
+    if (!secondStrike.ok) {
+      throw new Error("Second Strike command unexpectedly failed.");
+    }
+
+    expect(secondStrike.state.objects["enemy-jaw-worm"]).toBeUndefined();
+    expect(secondStrike.state.zones[SLAY_LIKE_ZONES.enemy]?.objectIds).toEqual([]);
+    expect(secondStrike.state.phase).toBe(SLAY_LIKE_PHASES.reward);
+    expect(secondStrike.state.zones[SLAY_LIKE_ZONES.reward]?.objectIds).toEqual([
+      "reward-card-strike",
+      "reward-card-defend",
+    ]);
+    expect(secondStrike.events.map((event) => event.type)).toContain(
+      SLAY_LIKE_EVENTS.rewardDraftOpened,
+    );
+
+    const chooseReward = executeSlayLikeCommand({
+      state: secondStrike.state,
+      command: {
+        id: "command-4",
+        type: SLAY_LIKE_COMMANDS.chooseReward,
+        playerId: "player-1",
+        payload: {
+          rewardObjectId: "reward-card-defend",
+        },
+      },
+    });
+
+    expect(chooseReward.ok).toBe(true);
+    if (!chooseReward.ok) {
+      throw new Error("Choose reward command unexpectedly failed.");
+    }
+
+    expect(chooseReward.state.phase).toBe(SLAY_LIKE_PHASES.complete);
+    expect(chooseReward.state.zones[SLAY_LIKE_ZONES.reward]?.objectIds).toEqual([]);
+    expect(chooseReward.state.zones[SLAY_LIKE_ZONES.discardPile]?.objectIds).toEqual([
+      "strike-1",
+      "strike-2",
+      "reward-card-defend",
+    ]);
+    expect(chooseReward.state.objects["reward-card-defend"]?.zoneId).toBe(
+      SLAY_LIKE_ZONES.discardPile,
+    );
+    expect(chooseReward.state.objects["reward-card-strike"]).toBeUndefined();
+    expect(chooseReward.events.map((event) => event.type)).toContain(
+      SLAY_LIKE_EVENTS.encounterCompleted,
+    );
+  });
+
+  it("rejects choosing rewards before the reward phase", () => {
+    const state = createSlayLikeEncounter({
+      gameId: "slay-1",
+      seed: "seed-1",
+    });
+    const result = executeSlayLikeCommand({
+      state,
+      command: {
+        id: "command-1",
+        type: SLAY_LIKE_COMMANDS.chooseReward,
+        playerId: "player-1",
+        payload: {
+          rewardObjectId: "reward-card-defend",
+        },
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("Choose reward command unexpectedly succeeded.");
+    }
+
+    expect(result.errors[0]?.code).toBe("SLAY_NOT_REWARD_PHASE");
+  });
 });
