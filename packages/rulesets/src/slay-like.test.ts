@@ -28,6 +28,8 @@ describe("slay-like encounter scaffold", () => {
     ]);
     expect(state.zones[SLAY_LIKE_ZONES.hand]?.objectIds).toEqual([]);
     expect(state.zones[SLAY_LIKE_ZONES.enemy]?.kind).toBe("enemy");
+    expect(state.zones[SLAY_LIKE_ZONES.enemy]?.objectIds).toEqual(["enemy-jaw-worm"]);
+    expect(state.objects["enemy-jaw-worm"]?.attributes.hp).toBe(12);
   });
 
   it("draws cards through the ruleset command registry and core pipeline", () => {
@@ -63,5 +65,105 @@ describe("slay-like encounter scaffold", () => {
       "defend-2",
     ]);
     expect(result.events.at(-1)?.type).toBe("CardsDrawn");
+  });
+
+  it("plays Strike through command legality and core effects", () => {
+    const state = createSlayLikeEncounter({
+      gameId: "slay-1",
+      seed: "seed-1",
+    });
+    const registry = createSlayLikeCommandRegistry();
+    const draw = executeCommand({
+      state,
+      command: {
+        id: "command-1",
+        type: SLAY_LIKE_COMMANDS.drawCards,
+        playerId: "player-1",
+        payload: {
+          count: 1,
+        },
+      },
+      commandRegistry: registry,
+    });
+
+    expect(draw.ok).toBe(true);
+    if (!draw.ok) {
+      throw new Error("Draw command unexpectedly failed.");
+    }
+
+    const play = executeCommand({
+      state: draw.state,
+      command: {
+        id: "command-2",
+        type: SLAY_LIKE_COMMANDS.playCard,
+        playerId: "player-1",
+        payload: {
+          cardId: "strike-1",
+          targetObjectId: "enemy-jaw-worm",
+        },
+      },
+      commandRegistry: registry,
+    });
+
+    expect(play.ok).toBe(true);
+    if (!play.ok) {
+      throw new Error("Play command unexpectedly failed.");
+    }
+
+    expect(play.state.resources["player-1"]?.values[SLAY_LIKE_RESOURCES.energy]).toBe(2);
+    expect(play.state.objects["enemy-jaw-worm"]?.attributes.hp).toBe(6);
+    expect(play.state.zones[SLAY_LIKE_ZONES.discardPile]?.objectIds).toEqual(["strike-1"]);
+    expect(play.events.map((event) => event.type)).toEqual([
+      "ResourceChanged",
+      "ObjectMoved",
+      "DamageDealt",
+      "ObjectMoved",
+      "CardDiscarded",
+    ]);
+  });
+
+  it("rejects targeted cards without a target", () => {
+    const state = createSlayLikeEncounter({
+      gameId: "slay-1",
+      seed: "seed-1",
+    });
+    const registry = createSlayLikeCommandRegistry();
+    const draw = executeCommand({
+      state,
+      command: {
+        id: "command-1",
+        type: SLAY_LIKE_COMMANDS.drawCards,
+        playerId: "player-1",
+        payload: {
+          count: 1,
+        },
+      },
+      commandRegistry: registry,
+    });
+
+    expect(draw.ok).toBe(true);
+    if (!draw.ok) {
+      throw new Error("Draw command unexpectedly failed.");
+    }
+
+    const play = executeCommand({
+      state: draw.state,
+      command: {
+        id: "command-2",
+        type: SLAY_LIKE_COMMANDS.playCard,
+        playerId: "player-1",
+        payload: {
+          cardId: "strike-1",
+        },
+      },
+      commandRegistry: registry,
+    });
+
+    expect(play.ok).toBe(false);
+    if (play.ok) {
+      throw new Error("Play command unexpectedly succeeded.");
+    }
+
+    expect(play.errors[0]?.code).toBe("SLAY_TARGET_REQUIRED");
   });
 });
