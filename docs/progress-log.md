@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 7 - Roguelike Run Loop
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add save package and Dexie persistence.
+- Next recommended round: add Dexie persistence adapter.
 
 ## Round Template
 
@@ -381,5 +381,15 @@ Notes:
 - Files changed: `packages/run/src/index.ts`, `packages/run/src/index.test.ts`, `docs/adr/0031-run-reward-deck-contract.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/run/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/run build`, full project validation, and architecture boundary searches confirming reward/deck transitions remain pure, immutable, and free of browser/presentation dependencies.
 - Result: passed.
-- Commit: pending.
+- Commit: `cbb60b1 feat(run): add reward deck transitions`
 - Notes: Run deck mutation is now a deterministic run transition; save/load and replay can include deck and reward draft state directly in later rounds.
+
+### 2026-06-17 - Round P7R4
+
+- Phase: Phase 7 - Roguelike Run Loop
+- Deliverable: added pure run save package and snapshot contracts with command logs, optional encounter snapshots, stable save hashing, and save verification.
+- Files changed: `packages/run/src/index.ts`, `packages/run/src/index.test.ts`, `docs/adr/0032-run-save-package-contract.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/run/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/run build`, full project validation, and architecture boundary searches confirming save contracts remain pure and do not depend on Dexie, browser storage, UI, or presentation packages.
+- Result: passed.
+- Commit: pending.
+- Notes: Save/load can now be tested with deterministic package hashes before adding a browser persistence adapter.

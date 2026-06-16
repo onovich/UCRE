@@ -1,5 +1,5 @@
-import { stableHash } from "@ucre/core";
-import type { JsonObject, StableHash } from "@ucre/core";
+import { hashGameState, stableHash } from "@ucre/core";
+import type { Command, GameState, JsonObject, StableHash } from "@ucre/core";
 
 export const UCRE_RUN_PACKAGE_ID = "@ucre/run";
 
@@ -186,6 +186,48 @@ export type RunNodeResolveResult = RunNodeResolveSuccess | RunNodeResolveFailure
 
 export interface RunPackageIdentity {
   readonly packageId: typeof UCRE_RUN_PACKAGE_ID;
+}
+
+export interface CreateRunSaveSnapshotInput {
+  readonly id: string;
+  readonly label: string;
+  readonly runState: RunState;
+  readonly commandLog: readonly Command[];
+  readonly gameState?: GameState;
+  readonly payload?: JsonObject;
+}
+
+export interface RunSaveSnapshot {
+  readonly id: string;
+  readonly label: string;
+  readonly runState: RunState;
+  readonly runStateHash: StableHash;
+  readonly commandCount: number;
+  readonly gameState?: GameState;
+  readonly gameStateHash?: StableHash;
+  readonly payload: JsonObject;
+}
+
+export interface CreateRunSavePackageInput {
+  readonly id: string;
+  readonly runState: RunState;
+  readonly commandLog: readonly Command[];
+  readonly snapshots?: readonly RunSaveSnapshot[];
+  readonly payload?: JsonObject;
+}
+
+export interface RunSavePackage {
+  readonly id: string;
+  readonly runId: RunId;
+  readonly seed: string;
+  readonly rulesetId: RulesetId;
+  readonly rulesVersion: string;
+  readonly contentManifestHash: string;
+  readonly currentRunState: RunState;
+  readonly commandLog: readonly Command[];
+  readonly snapshots: readonly RunSaveSnapshot[];
+  readonly payload: JsonObject;
+  readonly saveHash: StableHash;
 }
 
 export const DEFAULT_RUN_NODE_RESOLVERS: RunNodeResolverRegistry = {
@@ -395,6 +437,62 @@ export function findRunMapNode(map: RunMap, nodeId: RunNodeId): RunMapNode | und
 
 export function hashRunState(state: RunState): StableHash {
   return stableHash(state);
+}
+
+export function createRunSaveSnapshot(input: CreateRunSaveSnapshotInput): RunSaveSnapshot {
+  return {
+    id: input.id,
+    label: input.label,
+    runState: input.runState,
+    runStateHash: hashRunState(input.runState),
+    commandCount: input.commandLog.length,
+    ...(input.gameState
+      ? {
+          gameState: input.gameState,
+          gameStateHash: hashGameState(input.gameState),
+        }
+      : {}),
+    payload: input.payload ?? {},
+  };
+}
+
+export function createRunSavePackage(input: CreateRunSavePackageInput): RunSavePackage {
+  const saveWithoutHash = {
+    id: input.id,
+    runId: input.runState.id,
+    seed: input.runState.seed,
+    rulesetId: input.runState.rulesetId,
+    rulesVersion: input.runState.rulesVersion,
+    contentManifestHash: input.runState.contentManifestHash,
+    currentRunState: input.runState,
+    commandLog: input.commandLog,
+    snapshots: input.snapshots ?? [],
+    payload: input.payload ?? {},
+  };
+
+  return {
+    ...saveWithoutHash,
+    saveHash: stableHash(saveWithoutHash),
+  };
+}
+
+export function hashRunSavePackage(savePackage: RunSavePackage): StableHash {
+  return stableHash({
+    id: savePackage.id,
+    runId: savePackage.runId,
+    seed: savePackage.seed,
+    rulesetId: savePackage.rulesetId,
+    rulesVersion: savePackage.rulesVersion,
+    contentManifestHash: savePackage.contentManifestHash,
+    currentRunState: savePackage.currentRunState,
+    commandLog: savePackage.commandLog,
+    snapshots: savePackage.snapshots,
+    payload: savePackage.payload,
+  });
+}
+
+export function verifyRunSavePackage(savePackage: RunSavePackage): boolean {
+  return hashRunSavePackage(savePackage) === savePackage.saveHash;
 }
 
 function uniqueStrings(values: readonly string[]): readonly string[] {

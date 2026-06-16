@@ -1,16 +1,22 @@
 import { describe, expect, it } from "vitest";
 
+import { createInitialGameState } from "@ucre/core";
+
 import {
   claimRunRewardChoice,
   completeRunNode,
   createEncounterNodePayload,
   createLinearRunMap,
   createRunPackageIdentity,
+  createRunSavePackage,
+  createRunSaveSnapshot,
   createRunState,
   findRunMapNode,
+  hashRunSavePackage,
   hashRunState,
   openRunRewardDraft,
   resolveRunNode,
+  verifyRunSavePackage,
 } from "./index.js";
 
 describe("run state and map graph", () => {
@@ -444,5 +450,100 @@ describe("run state and map graph", () => {
       code: "RUN_DECK_CARD_ALREADY_EXISTS",
       message: "Run deck already contains card: strike-1",
     });
+  });
+
+  it("creates verifiable save packages from run state and command logs", () => {
+    const map = createLinearRunMap({
+      id: "act-1",
+      seed: "run-seed-1",
+      nodeKinds: ["start", "encounter"],
+    });
+    const runState = completeRunNode({
+      state: createRunState({
+        id: "run-1",
+        seed: "run-seed-1",
+        rulesetId: "slay-like",
+        rulesVersion: "0.0.0",
+        contentManifestHash: "ucre1-content",
+        map,
+        deck: [
+          {
+            id: "strike-1",
+            definitionId: "strike",
+            payload: {},
+          },
+        ],
+      }),
+      nodeId: "act-1:node:0",
+    });
+    const commandLog = [
+      {
+        id: "cmd-1",
+        type: "slay.drawCards",
+        playerId: "player-1",
+        payload: {
+          count: 5,
+        },
+      },
+    ];
+    const gameState = createInitialGameState({
+      id: "encounter-1",
+      seed: "run-seed-1:act-1:node:1",
+      rulesVersion: "0.0.0",
+      contentManifestHash: "ucre1-content",
+      activePlayerId: "player-1",
+    });
+    const snapshot = createRunSaveSnapshot({
+      id: "snapshot-1",
+      label: "After start",
+      runState,
+      commandLog,
+      gameState,
+      payload: {
+        nodeId: "act-1:node:0",
+      },
+    });
+    const savePackage = createRunSavePackage({
+      id: "save-1",
+      runState,
+      commandLog,
+      snapshots: [snapshot],
+      payload: {
+        slot: "auto",
+      },
+    });
+
+    expect(snapshot.commandCount).toBe(1);
+    expect(snapshot.runStateHash).toBe(hashRunState(runState));
+    expect(snapshot.gameStateHash).toMatch(/^ucre1-[0-9a-f]{8}$/);
+    expect(savePackage).toMatchObject({
+      id: "save-1",
+      runId: "run-1",
+      seed: "run-seed-1",
+      rulesetId: "slay-like",
+      rulesVersion: "0.0.0",
+      contentManifestHash: "ucre1-content",
+    });
+    expect(hashRunSavePackage(savePackage)).toBe(savePackage.saveHash);
+    expect(verifyRunSavePackage(savePackage)).toBe(true);
+    expect(
+      createRunSavePackage({
+        id: "save-1",
+        runState,
+        commandLog,
+        snapshots: [snapshot],
+        payload: {
+          slot: "auto",
+        },
+      }).saveHash,
+    ).toBe(savePackage.saveHash);
+    expect(
+      verifyRunSavePackage({
+        ...savePackage,
+        payload: {
+          slot: "manual",
+        },
+      }),
+    ).toBe(false);
   });
 });
