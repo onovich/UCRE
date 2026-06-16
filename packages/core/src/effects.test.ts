@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import { createInitialGameState } from "./contracts.js";
-import { discard, drawCards, moveObject } from "./effects.js";
+import {
+  addCounter,
+  dealDamage,
+  destroyObject,
+  discard,
+  drawCards,
+  gainResource,
+  moveObject,
+  removeCounter,
+  spendResource,
+} from "./effects.js";
 import { createGameObject, createZone, putGameObjectInZone, putZone } from "./state.js";
 
 describe("MoveObject", () => {
@@ -215,6 +225,149 @@ describe("Discard", () => {
   });
 });
 
+describe("resources", () => {
+  it("gains and spends player resources", () => {
+    const state = createMoveState();
+    const gained = gainResource(state, {
+      playerId: "player-1",
+      resourceId: "energy",
+      amount: 3,
+      eventId: "resource-1",
+    });
+
+    expect(gained.ok).toBe(true);
+    if (!gained.ok) {
+      throw new Error("GainResource unexpectedly failed.");
+    }
+
+    expect(gained.state.resources["player-1"]?.values.energy).toBe(3);
+
+    const spent = spendResource(gained.state, {
+      playerId: "player-1",
+      resourceId: "energy",
+      amount: 2,
+      eventId: "resource-2",
+    });
+
+    expect(spent.ok).toBe(true);
+    if (!spent.ok) {
+      throw new Error("SpendResource unexpectedly failed.");
+    }
+
+    expect(spent.state.resources["player-1"]?.values.energy).toBe(1);
+    expect(spent.events[0]?.payload).toMatchObject({
+      previousValue: 3,
+      nextValue: 1,
+      delta: -2,
+    });
+  });
+
+  it("rejects spending unavailable resources", () => {
+    const state = createMoveState();
+    const result = spendResource(state, {
+      playerId: "player-1",
+      resourceId: "energy",
+      amount: 1,
+      eventId: "resource-1",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.state).toBe(state);
+  });
+});
+
+describe("counters", () => {
+  it("adds and removes counters from objects", () => {
+    const state = createMoveState();
+    const added = addCounter(state, {
+      objectId: "card-1",
+      counterId: "charge",
+      amount: 2,
+      eventId: "counter-1",
+    });
+
+    expect(added.ok).toBe(true);
+    if (!added.ok) {
+      throw new Error("AddCounter unexpectedly failed.");
+    }
+
+    expect(added.state.objects["card-1"]?.counters.charge).toBe(2);
+
+    const removed = removeCounter(added.state, {
+      objectId: "card-1",
+      counterId: "charge",
+      amount: 1,
+      eventId: "counter-2",
+    });
+
+    expect(removed.ok).toBe(true);
+    if (!removed.ok) {
+      throw new Error("RemoveCounter unexpectedly failed.");
+    }
+
+    expect(removed.state.objects["card-1"]?.counters.charge).toBe(1);
+  });
+
+  it("rejects removing more counters than are present", () => {
+    const state = createMoveState();
+    const result = removeCounter(state, {
+      objectId: "card-1",
+      counterId: "charge",
+      amount: 1,
+      eventId: "counter-1",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.state).toBe(state);
+  });
+});
+
+describe("damage and destroy", () => {
+  it("applies block before hit point loss", () => {
+    const state = createCombatState();
+    const result = dealDamage(state, {
+      targetObjectId: "enemy-1",
+      amount: 5,
+      eventId: "damage-1",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("DealDamage unexpectedly failed.");
+    }
+
+    expect(result.state.objects["enemy-1"]?.attributes).toMatchObject({
+      block: 0,
+      hp: 7,
+    });
+    expect(result.events[0]?.payload).toMatchObject({
+      amount: 5,
+      blockedAmount: 2,
+      hitPointLoss: 3,
+      previousHitPoints: 10,
+      nextHitPoints: 7,
+    });
+  });
+
+  it("destroys objects by removing them from state and their zone", () => {
+    const state = createCombatState();
+    const result = destroyObject(state, {
+      objectId: "enemy-1",
+      eventId: "destroy-1",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("Destroy unexpectedly failed.");
+    }
+
+    expect(result.state.objects["enemy-1"]).toBeUndefined();
+    expect(result.state.zones.enemy?.objectIds).toEqual([]);
+    expect(result.events[0]?.type).toBe("ObjectDestroyed");
+    expect(result.presentationIntents[0]?.type).toBe("ObjectDestroyed");
+  });
+});
+
 function createMoveState(drawIds: readonly string[] = ["card-1"]) {
   let state = createInitialGameState({
     id: "game-1",
@@ -238,6 +391,33 @@ function createMoveState(drawIds: readonly string[] = ["card-1"]) {
       }),
     );
   }
+
+  return state;
+}
+
+function createCombatState() {
+  let state = createInitialGameState({
+    id: "game-1",
+    seed: "seed-1",
+    rulesVersion: "rules-0",
+    contentManifestHash: "content-0",
+    activePlayerId: "player-1",
+  });
+
+  state = putZone(state, createZone({ id: "enemy", kind: "enemy" }));
+  state = putGameObjectInZone(
+    state,
+    createGameObject({
+      id: "enemy-1",
+      definitionId: "jaw-worm",
+      ownerId: "enemy-player",
+      zoneId: "enemy",
+      attributes: {
+        hp: 10,
+        block: 2,
+      },
+    }),
+  );
 
   return state;
 }
