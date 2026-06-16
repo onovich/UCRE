@@ -3,85 +3,169 @@ import { useMemo, useState, type ChangeEvent } from "react";
 import {
   CARD_TARGET_POLICIES,
   DRAFT_EFFECT_KINDS,
-  compileCardEditorDrafts,
+  EDITOR_ENTITY_KINDS,
+  compileEditorContent,
   createDraftCard,
   createDraftEffect,
-  createInitialDraftCards,
+  createDraftEnemy,
+  createDraftRelic,
+  createInitialDraftContent,
   duplicateDraftCard,
+  duplicateDraftEnemy,
+  duplicateDraftRelic,
   type DraftCard,
   type DraftCardEffect,
   type DraftEffectKind,
+  type DraftEditorContent,
+  type DraftEnemy,
+  type DraftRelic,
+  type EditorEntityKind,
 } from "./card-editor-model.js";
 
+type SelectionState = Record<EditorEntityKind, string>;
+
+const ENTITY_LABELS: Record<EditorEntityKind, string> = {
+  cards: "Cards",
+  relics: "Relics",
+  enemies: "Enemies",
+};
+
 export function App() {
-  const [cards, setCards] = useState<readonly DraftCard[]>(() => createInitialDraftCards());
-  const [selectedCardId, setSelectedCardId] = useState(cards[0]?.id ?? "");
-  const preview = useMemo(() => compileCardEditorDrafts(cards), [cards]);
-  const selectedCard = cards.find((card) => card.id === selectedCardId) ?? cards[0];
+  const [content, setContent] = useState<DraftEditorContent>(() => createInitialDraftContent());
+  const [activeKind, setActiveKind] = useState<EditorEntityKind>("cards");
+  const [selection, setSelection] = useState<SelectionState>(() => ({
+    cards: content.cards[0]?.id ?? "",
+    relics: content.relics[0]?.id ?? "",
+    enemies: content.enemies[0]?.id ?? "",
+  }));
+  const preview = useMemo(() => compileEditorContent(content), [content]);
+  const selectedCard =
+    content.cards.find((card) => card.id === selection.cards) ?? content.cards[0];
+  const selectedRelic =
+    content.relics.find((relic) => relic.id === selection.relics) ?? content.relics[0];
+  const selectedEnemy =
+    content.enemies.find((enemy) => enemy.id === selection.enemies) ?? content.enemies[0];
+  const activeItems = getActiveItems(content, activeKind);
   const canonicalJson = preview.result.ok
     ? preview.result.canonicalJson
     : JSON.stringify(preview.manifest, null, 2);
+
+  function setSelectedId(kind: EditorEntityKind, id: string): void {
+    setSelection((currentSelection) => ({
+      ...currentSelection,
+      [kind]: id,
+    }));
+  }
 
   function updateSelectedCard(patch: Partial<DraftCard>): void {
     if (!selectedCard) {
       return;
     }
 
-    setCards((currentCards) =>
-      currentCards.map((card) => (card.id === selectedCard.id ? { ...card, ...patch } : card)),
-    );
+    setContent((currentContent) => ({
+      ...currentContent,
+      cards: currentContent.cards.map((card) =>
+        card.id === selectedCard.id ? { ...card, ...patch } : card,
+      ),
+    }));
 
     if (patch.id) {
-      setSelectedCardId(patch.id);
+      setSelectedId("cards", patch.id);
     }
   }
 
-  function updateSelectedEffect(index: number, patch: Partial<DraftCardEffect>): void {
-    if (!selectedCard) {
+  function updateSelectedRelic(patch: Partial<DraftRelic>): void {
+    if (!selectedRelic) {
       return;
     }
 
-    updateSelectedCard({
-      effects: selectedCard.effects.map((effect, effectIndex) =>
-        effectIndex === index ? { ...effect, ...patch } : effect,
+    setContent((currentContent) => ({
+      ...currentContent,
+      relics: currentContent.relics.map((relic) =>
+        relic.id === selectedRelic.id ? { ...relic, ...patch } : relic,
       ),
-    });
+    }));
+
+    if (patch.id) {
+      setSelectedId("relics", patch.id);
+    }
   }
 
-  function addCard(): void {
-    const card = createDraftCard(cards.length + 1);
-    setCards((currentCards) => [...currentCards, card]);
-    setSelectedCardId(card.id);
-  }
-
-  function duplicateSelectedCard(): void {
-    if (!selectedCard) {
+  function updateSelectedEnemy(patch: Partial<DraftEnemy>): void {
+    if (!selectedEnemy) {
       return;
     }
 
-    const card = duplicateDraftCard(selectedCard, cards.length + 1);
-    setCards((currentCards) => [...currentCards, card]);
-    setSelectedCardId(card.id);
+    setContent((currentContent) => ({
+      ...currentContent,
+      enemies: currentContent.enemies.map((enemy) =>
+        enemy.id === selectedEnemy.id ? { ...enemy, ...patch } : enemy,
+      ),
+    }));
+
+    if (patch.id) {
+      setSelectedId("enemies", patch.id);
+    }
   }
 
-  function addEffect(): void {
-    if (!selectedCard) {
+  function addActiveEntity(): void {
+    if (activeKind === "cards") {
+      const card = createDraftCard(content.cards.length + 1);
+      setContent((currentContent) => ({
+        ...currentContent,
+        cards: [...currentContent.cards, card],
+      }));
+      setSelectedId("cards", card.id);
       return;
     }
 
-    updateSelectedCard({
-      effects: [...selectedCard.effects, createDraftEffect(selectedCard.effects.length + 1)],
-    });
-  }
-
-  function removeEffect(index: number): void {
-    if (!selectedCard || selectedCard.effects.length <= 1) {
+    if (activeKind === "relics") {
+      const relic = createDraftRelic(content.relics.length + 1);
+      setContent((currentContent) => ({
+        ...currentContent,
+        relics: [...currentContent.relics, relic],
+      }));
+      setSelectedId("relics", relic.id);
       return;
     }
 
-    updateSelectedCard({
-      effects: selectedCard.effects.filter((_, effectIndex) => effectIndex !== index),
-    });
+    const enemy = createDraftEnemy(content.enemies.length + 1);
+    setContent((currentContent) => ({
+      ...currentContent,
+      enemies: [...currentContent.enemies, enemy],
+    }));
+    setSelectedId("enemies", enemy.id);
+  }
+
+  function duplicateActiveEntity(): void {
+    if (activeKind === "cards" && selectedCard) {
+      const card = duplicateDraftCard(selectedCard, content.cards.length + 1);
+      setContent((currentContent) => ({
+        ...currentContent,
+        cards: [...currentContent.cards, card],
+      }));
+      setSelectedId("cards", card.id);
+      return;
+    }
+
+    if (activeKind === "relics" && selectedRelic) {
+      const relic = duplicateDraftRelic(selectedRelic, content.relics.length + 1);
+      setContent((currentContent) => ({
+        ...currentContent,
+        relics: [...currentContent.relics, relic],
+      }));
+      setSelectedId("relics", relic.id);
+      return;
+    }
+
+    if (activeKind === "enemies" && selectedEnemy) {
+      const enemy = duplicateDraftEnemy(selectedEnemy, content.enemies.length + 1);
+      setContent((currentContent) => ({
+        ...currentContent,
+        enemies: [...currentContent.enemies, enemy],
+      }));
+      setSelectedId("enemies", enemy.id);
+    }
   }
 
   return (
@@ -97,7 +181,10 @@ export function App() {
           >
             {preview.result.ok ? "Compiled" : "Blocked"}
           </span>
-          <span className="status-pill">{cards.length} cards</span>
+          <span className="status-pill">
+            {content.cards.length} cards / {content.relics.length} relics / {content.enemies.length}{" "}
+            enemies
+          </span>
           <span className="status-pill">
             {preview.result.ok
               ? preview.result.manifestHash
@@ -106,115 +193,70 @@ export function App() {
         </div>
       </header>
 
-      <section className="editor-layout" aria-label="Card editor workspace">
-        <aside className="editor-panel card-list-panel" aria-label="Cards">
+      <nav className="entity-tabs" aria-label="Content type">
+        {EDITOR_ENTITY_KINDS.map((kind) => (
+          <button
+            className={kind === activeKind ? "entity-tab entity-tab-active" : "entity-tab"}
+            key={kind}
+            type="button"
+            onClick={() => setActiveKind(kind)}
+          >
+            {ENTITY_LABELS[kind]}
+          </button>
+        ))}
+      </nav>
+
+      <section className="editor-layout" aria-label="Editor workspace">
+        <aside className="editor-panel card-list-panel" aria-label={ENTITY_LABELS[activeKind]}>
           <div className="panel-heading">
-            <h2>Cards</h2>
-            <button className="primary-button compact-button" type="button" onClick={addCard}>
+            <h2>{ENTITY_LABELS[activeKind]}</h2>
+            <button
+              className="primary-button compact-button"
+              type="button"
+              onClick={addActiveEntity}
+            >
               New
             </button>
           </div>
           <div className="card-list">
-            {cards.map((card) => (
+            {activeItems.map((item) => (
               <button
-                className={card.id === selectedCard?.id ? "card-row card-row-selected" : "card-row"}
-                key={card.id}
+                className={
+                  item.id === selection[activeKind] ? "card-row card-row-selected" : "card-row"
+                }
+                key={item.id}
                 type="button"
-                onClick={() => setSelectedCardId(card.id)}
+                onClick={() => setSelectedId(activeKind, item.id)}
               >
-                <strong>{card.name || "(unnamed)"}</strong>
-                <span>{card.id || "(missing id)"}</span>
-                <span>
-                  {card.costText || "-"} cost · {card.targetPolicy}
-                </span>
+                <strong>{item.name || "(unnamed)"}</strong>
+                <span>{item.id || "(missing id)"}</span>
+                <span>{getEntityMeta(activeKind, item)}</span>
               </button>
             ))}
           </div>
         </aside>
 
-        <section className="editor-panel card-form-panel" aria-label="Card details">
+        <section className="editor-panel card-form-panel" aria-label="Details">
           <div className="panel-heading">
-            <h2>Card</h2>
+            <h2>{singularLabel(activeKind)}</h2>
             <button
               className="ghost-button compact-button"
               type="button"
-              onClick={duplicateSelectedCard}
-              disabled={!selectedCard}
+              onClick={duplicateActiveEntity}
+              disabled={activeItems.length === 0}
             >
               Duplicate
             </button>
           </div>
 
-          {selectedCard ? (
-            <div className="editor-form">
-              <label>
-                <span>ID</span>
-                <input
-                  value={selectedCard.id}
-                  onChange={(event) => updateSelectedCard({ id: event.target.value })}
-                />
-              </label>
-              <label>
-                <span>Name</span>
-                <input
-                  value={selectedCard.name}
-                  onChange={(event) => updateSelectedCard({ name: event.target.value })}
-                />
-              </label>
-              <label>
-                <span>Cost</span>
-                <input
-                  inputMode="numeric"
-                  value={selectedCard.costText}
-                  onChange={(event) => updateSelectedCard({ costText: event.target.value })}
-                />
-              </label>
-              <label>
-                <span>Target</span>
-                <select
-                  value={selectedCard.targetPolicy}
-                  onChange={(event) =>
-                    updateSelectedCard({
-                      targetPolicy: event.target.value as DraftCard["targetPolicy"],
-                    })
-                  }
-                >
-                  {CARD_TARGET_POLICIES.map((policy) => (
-                    <option key={policy} value={policy}>
-                      {policy}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="wide-field">
-                <span>Tags</span>
-                <input
-                  value={selectedCard.tagsText}
-                  onChange={(event) => updateSelectedCard({ tagsText: event.target.value })}
-                />
-              </label>
-
-              <section className="effect-editor" aria-label="Effects">
-                <div className="panel-heading">
-                  <h3>Effects</h3>
-                  <button className="ghost-button compact-button" type="button" onClick={addEffect}>
-                    Add
-                  </button>
-                </div>
-                <div className="effect-list">
-                  {selectedCard.effects.map((effect, index) => (
-                    <EffectRow
-                      effect={effect}
-                      index={index}
-                      key={`${effect.id}-${index}`}
-                      canRemove={selectedCard.effects.length > 1}
-                      onChange={(patch) => updateSelectedEffect(index, patch)}
-                      onRemove={() => removeEffect(index)}
-                    />
-                  ))}
-                </div>
-              </section>
-            </div>
+          {activeKind === "cards" && selectedCard ? (
+            <CardForm card={selectedCard} onChange={updateSelectedCard} />
+          ) : null}
+          {activeKind === "relics" && selectedRelic ? (
+            <RelicForm relic={selectedRelic} onChange={updateSelectedRelic} />
+          ) : null}
+          {activeKind === "enemies" && selectedEnemy ? (
+            <EnemyForm enemy={selectedEnemy} onChange={updateSelectedEnemy} />
           ) : null}
         </section>
 
@@ -237,8 +279,12 @@ export function App() {
                 <dd>{preview.result.manifest.cards.length}</dd>
               </div>
               <div>
-                <dt>Profiles</dt>
-                <dd>{preview.result.manifest.presentationProfiles.length}</dd>
+                <dt>Relics</dt>
+                <dd>{preview.result.manifest.relics.length}</dd>
+              </div>
+              <div>
+                <dt>Enemies</dt>
+                <dd>{preview.result.manifest.enemies.length}</dd>
               </div>
             </dl>
           ) : (
@@ -257,6 +303,211 @@ export function App() {
         </aside>
       </section>
     </main>
+  );
+}
+
+function CardForm(props: {
+  readonly card: DraftCard;
+  readonly onChange: (patch: Partial<DraftCard>) => void;
+}) {
+  return (
+    <div className="editor-form">
+      <label>
+        <span>ID</span>
+        <input
+          value={props.card.id}
+          onChange={(event) => props.onChange({ id: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>Name</span>
+        <input
+          value={props.card.name}
+          onChange={(event) => props.onChange({ name: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>Cost</span>
+        <input
+          inputMode="numeric"
+          value={props.card.costText}
+          onChange={(event) => props.onChange({ costText: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>Target</span>
+        <select
+          value={props.card.targetPolicy}
+          onChange={(event) =>
+            props.onChange({
+              targetPolicy: event.target.value as DraftCard["targetPolicy"],
+            })
+          }
+        >
+          {CARD_TARGET_POLICIES.map((policy) => (
+            <option key={policy} value={policy}>
+              {policy}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="wide-field">
+        <span>Tags</span>
+        <input
+          value={props.card.tagsText}
+          onChange={(event) => props.onChange({ tagsText: event.target.value })}
+        />
+      </label>
+      <EffectEditor
+        label="Effects"
+        effects={props.card.effects}
+        onChange={(effects) => props.onChange({ effects })}
+      />
+    </div>
+  );
+}
+
+function RelicForm(props: {
+  readonly relic: DraftRelic;
+  readonly onChange: (patch: Partial<DraftRelic>) => void;
+}) {
+  return (
+    <div className="editor-form">
+      <label>
+        <span>ID</span>
+        <input
+          value={props.relic.id}
+          onChange={(event) => props.onChange({ id: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>Name</span>
+        <input
+          value={props.relic.name}
+          onChange={(event) => props.onChange({ name: event.target.value })}
+        />
+      </label>
+      <label className="wide-field">
+        <span>Description</span>
+        <input
+          value={props.relic.description}
+          onChange={(event) => props.onChange({ description: event.target.value })}
+        />
+      </label>
+      <label className="wide-field">
+        <span>Tags</span>
+        <input
+          value={props.relic.tagsText}
+          onChange={(event) => props.onChange({ tagsText: event.target.value })}
+        />
+      </label>
+      <EffectEditor
+        label="Effects"
+        effects={props.relic.effects}
+        onChange={(effects) => props.onChange({ effects })}
+      />
+    </div>
+  );
+}
+
+function EnemyForm(props: {
+  readonly enemy: DraftEnemy;
+  readonly onChange: (patch: Partial<DraftEnemy>) => void;
+}) {
+  return (
+    <div className="editor-form">
+      <label>
+        <span>ID</span>
+        <input
+          value={props.enemy.id}
+          onChange={(event) => props.onChange({ id: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>Name</span>
+        <input
+          value={props.enemy.name}
+          onChange={(event) => props.onChange({ name: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>HP</span>
+        <input
+          inputMode="numeric"
+          value={props.enemy.hpText}
+          onChange={(event) => props.onChange({ hpText: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>Block</span>
+        <input
+          inputMode="numeric"
+          value={props.enemy.blockText}
+          onChange={(event) => props.onChange({ blockText: event.target.value })}
+        />
+      </label>
+      <label className="wide-field">
+        <span>Tags</span>
+        <input
+          value={props.enemy.tagsText}
+          onChange={(event) => props.onChange({ tagsText: event.target.value })}
+        />
+      </label>
+      <EffectEditor
+        label="Intents"
+        effects={props.enemy.intents}
+        onChange={(intents) => props.onChange({ intents })}
+      />
+    </div>
+  );
+}
+
+function EffectEditor(props: {
+  readonly label: string;
+  readonly effects: readonly DraftCardEffect[];
+  readonly onChange: (effects: readonly DraftCardEffect[]) => void;
+}) {
+  function updateEffect(index: number, patch: Partial<DraftCardEffect>): void {
+    props.onChange(
+      props.effects.map((effect, effectIndex) =>
+        effectIndex === index ? { ...effect, ...patch } : effect,
+      ),
+    );
+  }
+
+  function addEffect(): void {
+    props.onChange([...props.effects, createDraftEffect(props.effects.length + 1)]);
+  }
+
+  function removeEffect(index: number): void {
+    if (props.effects.length <= 1) {
+      return;
+    }
+
+    props.onChange(props.effects.filter((_, effectIndex) => effectIndex !== index));
+  }
+
+  return (
+    <section className="effect-editor" aria-label={props.label}>
+      <div className="panel-heading">
+        <h3>{props.label}</h3>
+        <button className="ghost-button compact-button" type="button" onClick={addEffect}>
+          Add
+        </button>
+      </div>
+      <div className="effect-list">
+        {props.effects.map((effect, index) => (
+          <EffectRow
+            effect={effect}
+            index={index}
+            key={`${effect.id}-${index}`}
+            canRemove={props.effects.length > 1}
+            onChange={(patch) => updateEffect(index, patch)}
+            onRemove={() => removeEffect(index)}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -310,4 +561,43 @@ function EffectRow(props: {
       </button>
     </div>
   );
+}
+
+function getActiveItems(content: DraftEditorContent, kind: EditorEntityKind) {
+  if (kind === "cards") {
+    return content.cards;
+  }
+
+  if (kind === "relics") {
+    return content.relics;
+  }
+
+  return content.enemies;
+}
+
+function getEntityMeta(kind: EditorEntityKind, item: DraftCard | DraftRelic | DraftEnemy): string {
+  if (kind === "cards") {
+    const card = item as DraftCard;
+    return `${card.costText || "-"} cost - ${card.targetPolicy}`;
+  }
+
+  if (kind === "relics") {
+    const relic = item as DraftRelic;
+    return `${relic.effects.length} effects`;
+  }
+
+  const enemy = item as DraftEnemy;
+  return `${enemy.hpText || "-"} HP - ${enemy.intents.length} intents`;
+}
+
+function singularLabel(kind: EditorEntityKind): string {
+  if (kind === "cards") {
+    return "Card";
+  }
+
+  if (kind === "relics") {
+    return "Relic";
+  }
+
+  return "Enemy";
 }

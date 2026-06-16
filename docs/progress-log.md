@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 9 - Editor, Simulation, And Balance Tools
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add relic and enemy editor MVP.
+- Next recommended round: add reward pool editor.
 
 ## Round Template
 
@@ -491,5 +491,15 @@ Notes:
 - Files changed: `apps/editor/*`, `packages/content-compiler/src/*`, `packages/content-compiler/package.json`, `pnpm-lock.yaml`, `docs/adr/0039-editor-card-browser-compiler.md`, and this progress log.
 - Validation: `corepack pnpm --filter @ucre/content-compiler build`, `corepack pnpm test apps/editor/src/card-editor-model.test.ts packages/content-compiler/src/index.test.ts`, `corepack pnpm --filter @ucre/editor build`, `corepack pnpm lint`, `corepack pnpm typecheck`, Playwright editor smoke on `http://127.0.0.1:5175` for new-card creation, schema-error repair, clean console, and 390px mobile overflow, Phase 9 architecture searches for browser-safe compiler imports and pure package dependency leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after formatting the new editor files and adding an inline editor favicon to remove browser 404 noise.
-- Commit: pending.
+- Commit: `e732fde feat(editor): add card editor compiler preview`
 - Notes: The compiler now exposes `@ucre/content-compiler/browser` for React tools while Node file loading stays on the main compiler entry.
+
+### 2026-06-17 - Round P9R2
+
+- Phase: Phase 9 - Editor, Simulation, And Balance Tools
+- Deliverable: extended the browser editor MVP with relic and enemy draft collections, entity switching, duplicate/new flows, relic effects, enemy HP/block/intents, and shared manifest compilation.
+- Files changed: `apps/editor/src/App.tsx`, `apps/editor/src/card-editor-model.ts`, `apps/editor/src/card-editor-model.test.ts`, `apps/editor/src/styles.css`, and this progress log.
+- Validation: `corepack pnpm test apps/editor/src/card-editor-model.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/editor build`, Playwright editor smoke on `http://127.0.0.1:5175` for relic/enemy creation, enemy HP schema-error repair, clean console, and 390px mobile overflow, Phase 9 architecture searches for browser-safe compiler imports and pure package dependency leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed.
+- Commit: pending.
+- Notes: Relics and enemies now flow through the same draft-to-`ContentManifest` pipeline as cards, so compiler errors and hashes cover all three authoring surfaces.

@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildEditorManifest,
   compileCardEditorDrafts,
+  compileEditorContent,
+  createInitialDraftContent,
   createInitialDraftCards,
   type DraftCard,
 } from "./card-editor-model.js";
@@ -66,6 +68,66 @@ describe("card editor model", () => {
     expect(manifest.cards[0]?.effects[0]?.payload).toEqual({
       delta: 2,
       resourceId: "energy",
+    });
+  });
+
+  it("builds a compileable manifest with draft relics and enemies", () => {
+    const preview = compileEditorContent(createInitialDraftContent());
+
+    expect(preview.result.ok).toBe(true);
+    if (!preview.result.ok) {
+      throw new Error("Default editor content failed compilation.");
+    }
+
+    expect(preview.result.manifest.cards).toHaveLength(2);
+    expect(preview.result.manifest.relics.map((relic) => relic.id)).toEqual(["emberAnchor"]);
+    expect(preview.result.manifest.enemies.map((enemy) => enemy.id)).toEqual(["trainingWarden"]);
+    expect(preview.result.manifestHash).toMatch(/^ucre1-/);
+  });
+
+  it("surfaces duplicate relic and enemy IDs through the shared content compiler", () => {
+    const content = createInitialDraftContent();
+    const [relic] = content.relics;
+    const [enemy] = content.enemies;
+    if (!relic || !enemy) {
+      throw new Error("Default editor relic or enemy is missing.");
+    }
+
+    const preview = compileEditorContent({
+      ...content,
+      relics: [relic, relic],
+      enemies: [enemy, enemy],
+    });
+
+    expect(preview.result.ok).toBe(false);
+    if (preview.result.ok) {
+      throw new Error("Duplicate relic and enemy IDs unexpectedly compiled.");
+    }
+
+    expect(preview.result.errors.map((error) => error.path)).toEqual([
+      "relics.1.id",
+      "enemies.1.id",
+    ]);
+  });
+
+  it("keeps enemy intent payloads compiler-visible", () => {
+    const content = createInitialDraftContent();
+    const manifest = buildEditorManifest({
+      ...content,
+      enemies: content.enemies.map((enemy) => ({
+        ...enemy,
+        intents: [
+          {
+            id: "enemyBlock",
+            type: "BlockGained",
+            amountText: "9",
+          },
+        ],
+      })),
+    });
+
+    expect(manifest.enemies[0]?.intents[0]?.payload).toEqual({
+      amount: 9,
     });
   });
 });

@@ -92,6 +92,30 @@ button:disabled {
   color: #ffb9be;
 }
 
+.entity-tabs {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.entity-tab {
+  background: #131817;
+  border: 1px solid #32403c;
+  border-radius: 6px;
+  color: #c8d5d0;
+  cursor: pointer;
+  font-weight: 800;
+  min-height: 36px;
+  padding: 8px 12px;
+}
+
+.entity-tab-active {
+  background: #18302a;
+  border-color: #5aa78a;
+  color: #f2fff8;
+}
+
 .editor-layout {
   display: grid;
   gap: 16px;

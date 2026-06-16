@@ -3,6 +3,7 @@ import type { ContentManifest } from "@ucre/content-schema";
 
 export type CardTargetPolicy = ContentManifest["cards"][number]["targetPolicy"];
 export type DraftEffectKind = "DamageDealt" | "BlockGained" | "ResourceChanged";
+export type EditorEntityKind = "cards" | "relics" | "enemies";
 
 export interface DraftCardEffect {
   readonly id: string;
@@ -17,6 +18,29 @@ export interface DraftCard {
   readonly targetPolicy: CardTargetPolicy;
   readonly tagsText: string;
   readonly effects: readonly DraftCardEffect[];
+}
+
+export interface DraftRelic {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly tagsText: string;
+  readonly effects: readonly DraftCardEffect[];
+}
+
+export interface DraftEnemy {
+  readonly id: string;
+  readonly name: string;
+  readonly hpText: string;
+  readonly blockText: string;
+  readonly tagsText: string;
+  readonly intents: readonly DraftCardEffect[];
+}
+
+export interface DraftEditorContent {
+  readonly cards: readonly DraftCard[];
+  readonly relics: readonly DraftRelic[];
+  readonly enemies: readonly DraftEnemy[];
 }
 
 export interface CardEditorCompilePreview {
@@ -37,6 +61,16 @@ export const DRAFT_EFFECT_KINDS: readonly DraftEffectKind[] = [
   "BlockGained",
   "ResourceChanged",
 ];
+
+export const EDITOR_ENTITY_KINDS: readonly EditorEntityKind[] = ["cards", "relics", "enemies"];
+
+export function createInitialDraftContent(): DraftEditorContent {
+  return {
+    cards: createInitialDraftCards(),
+    relics: createInitialDraftRelics(),
+    enemies: createInitialDraftEnemies(),
+  };
+}
 
 export function createInitialDraftCards(): readonly DraftCard[] {
   return [
@@ -71,6 +105,43 @@ export function createInitialDraftCards(): readonly DraftCard[] {
   ];
 }
 
+export function createInitialDraftRelics(): readonly DraftRelic[] {
+  return [
+    {
+      id: "emberAnchor",
+      name: "Ember Anchor",
+      description: "Gain energy at combat start.",
+      tagsText: "starter, energy",
+      effects: [
+        {
+          id: "emberAnchorEnergy",
+          type: "ResourceChanged",
+          amountText: "1",
+        },
+      ],
+    },
+  ];
+}
+
+export function createInitialDraftEnemies(): readonly DraftEnemy[] {
+  return [
+    {
+      id: "trainingWarden",
+      name: "Training Warden",
+      hpText: "42",
+      blockText: "0",
+      tagsText: "elite, tutorial",
+      intents: [
+        {
+          id: "trainingWardenStrike",
+          type: "DamageDealt",
+          amountText: "7",
+        },
+      ],
+    },
+  ];
+}
+
 export function createDraftCard(sequence: number): DraftCard {
   return {
     id: `draftCard${sequence}`,
@@ -88,15 +159,63 @@ export function createDraftCard(sequence: number): DraftCard {
   };
 }
 
+export function createDraftRelic(sequence: number): DraftRelic {
+  return {
+    id: `draftRelic${sequence}`,
+    name: `Draft Relic ${sequence}`,
+    description: "Draft relic effect.",
+    tagsText: "relic",
+    effects: [
+      {
+        id: `draftRelic${sequence}Effect`,
+        type: "ResourceChanged",
+        amountText: "1",
+      },
+    ],
+  };
+}
+
+export function createDraftEnemy(sequence: number): DraftEnemy {
+  return {
+    id: `draftEnemy${sequence}`,
+    name: `Draft Enemy ${sequence}`,
+    hpText: "36",
+    blockText: "0",
+    tagsText: "enemy",
+    intents: [
+      {
+        id: `draftEnemy${sequence}Intent`,
+        type: "DamageDealt",
+        amountText: "6",
+      },
+    ],
+  };
+}
+
 export function duplicateDraftCard(card: DraftCard, sequence: number): DraftCard {
   return {
     ...card,
     id: `${card.id}Copy${sequence}`,
     name: `${card.name} Copy ${sequence}`,
-    effects: card.effects.map((effect, index) => ({
-      ...effect,
-      id: `${card.id}Copy${sequence}Effect${index + 1}`,
-    })),
+    effects: duplicateEffects(card.effects, `${card.id}Copy${sequence}Effect`),
+  };
+}
+
+export function duplicateDraftRelic(relic: DraftRelic, sequence: number): DraftRelic {
+  return {
+    ...relic,
+    id: `${relic.id}Copy${sequence}`,
+    name: `${relic.name} Copy ${sequence}`,
+    effects: duplicateEffects(relic.effects, `${relic.id}Copy${sequence}Effect`),
+  };
+}
+
+export function duplicateDraftEnemy(enemy: DraftEnemy, sequence: number): DraftEnemy {
+  return {
+    ...enemy,
+    id: `${enemy.id}Copy${sequence}`,
+    name: `${enemy.name} Copy ${sequence}`,
+    intents: duplicateEffects(enemy.intents, `${enemy.id}Copy${sequence}Intent`),
   };
 }
 
@@ -109,7 +228,15 @@ export function createDraftEffect(sequence: number, type: DraftEffectKind = "Dam
 }
 
 export function compileCardEditorDrafts(cards: readonly DraftCard[]): CardEditorCompilePreview {
-  const manifest = buildEditorManifest(cards);
+  return compileEditorContent({
+    cards,
+    relics: [],
+    enemies: [],
+  });
+}
+
+export function compileEditorContent(content: DraftEditorContent): CardEditorCompilePreview {
+  const manifest = buildEditorManifest(content);
 
   return {
     manifest,
@@ -117,7 +244,11 @@ export function compileCardEditorDrafts(cards: readonly DraftCard[]): CardEditor
   };
 }
 
-export function buildEditorManifest(cards: readonly DraftCard[]): ContentManifest {
+export function buildEditorManifest(
+  input: DraftEditorContent | readonly DraftCard[],
+): ContentManifest {
+  const content = normalizeEditorContent(input);
+
   return {
     manifestId: "editorDraftManifest",
     rulesetId: "slay-like",
@@ -131,7 +262,7 @@ export function buildEditorManifest(cards: readonly DraftCard[]): ContentManifes
       },
     ],
     zones: [],
-    cards: cards.map((card) => ({
+    cards: content.cards.map((card) => ({
       id: card.id.trim(),
       name: card.name.trim(),
       cost: parseInteger(card.costText),
@@ -143,8 +274,29 @@ export function buildEditorManifest(cards: readonly DraftCard[]): ContentManifes
         payload: createEffectPayload(effect),
       })),
     })),
-    relics: [],
-    enemies: [],
+    relics: content.relics.map((relic) => ({
+      id: relic.id.trim(),
+      name: relic.name.trim(),
+      description: relic.description.trim(),
+      tags: splitTags(relic.tagsText),
+      effects: relic.effects.map((effect) => ({
+        id: effect.id.trim(),
+        type: effect.type,
+        payload: createEffectPayload(effect),
+      })),
+    })),
+    enemies: content.enemies.map((enemy) => ({
+      id: enemy.id.trim(),
+      name: enemy.name.trim(),
+      hp: parseInteger(enemy.hpText),
+      block: parseInteger(enemy.blockText),
+      tags: splitTags(enemy.tagsText),
+      intents: enemy.intents.map((intent) => ({
+        id: intent.id.trim(),
+        type: intent.type,
+        payload: createEffectPayload(intent),
+      })),
+    })),
     objectives: [],
     commands: [],
     effects: [],
@@ -173,6 +325,30 @@ export function buildEditorManifest(cards: readonly DraftCard[]): ContentManifes
     ],
     rewardPools: [],
   };
+}
+
+function normalizeEditorContent(
+  input: DraftEditorContent | readonly DraftCard[],
+): DraftEditorContent {
+  if (Array.isArray(input)) {
+    return {
+      cards: input as readonly DraftCard[],
+      relics: [],
+      enemies: [],
+    };
+  }
+
+  return input as DraftEditorContent;
+}
+
+function duplicateEffects(
+  effects: readonly DraftCardEffect[],
+  prefix: string,
+): readonly DraftCardEffect[] {
+  return effects.map((effect, index) => ({
+    ...effect,
+    id: `${prefix}${index + 1}`,
+  }));
 }
 
 function createEffectPayload(effect: DraftCardEffect): Record<string, number | string> {
