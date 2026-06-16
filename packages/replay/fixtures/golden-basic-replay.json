@@ -1,0 +1,32 @@
+{
+  "input": {
+    "gameId": "golden-basic-replay",
+    "seed": "seed-basic-1",
+    "rulesVersion": "core-rules-1",
+    "contentManifestHash": "content-basic-1",
+    "commands": [
+      {
+        "id": "command-1",
+        "type": "GainEnergy",
+        "playerId": "player-1",
+        "payload": {
+          "amount": 3
+        }
+      },
+      {
+        "id": "command-2",
+        "type": "SpendEnergy",
+        "playerId": "player-1",
+        "payload": {
+          "amount": 1
+        }
+      }
+    ]
+  },
+  "expected": {
+    "commandHash": "ucre1-9f574ca1",
+    "stateHash": "ucre1-b96a6ce6",
+    "eventHash": "ucre1-9323d47f",
+    "replayHash": "ucre1-80e8383f"
+  }
+}

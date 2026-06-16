@@ -4,9 +4,9 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 ## Current Status
 
-- Current phase: Phase 1 - Deterministic Rules Core
+- Current phase: Phase 2 - First Ruleset Vertical Slice
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: implement replay runner and first golden replay.
+- Next recommended round: create the minimal Slay-like ruleset scaffold with phases, zones, resources, and starter command handlers.
 
 ## Round Template
 
@@ -101,5 +101,15 @@ Notes:
 - Files changed: `packages/core/src/contracts.ts`, `packages/core/src/checks.ts`, core checks/contracts/hash tests, `packages/core/src/index.ts`, `docs/adr/0006-trigger-objective-checks.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and Phase 1 forbidden dependency/nondeterminism searches.
 - Result: passed.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `684da9f feat(core): add trigger and objective checks`
 - Notes: Terminal objective transitions emit once, and queued triggers are part of hashed `GameState`.
+
+### 2026-06-17 - Round P1R7
+
+- Phase: Phase 1 - Deterministic Rules Core
+- Deliverable: implemented the replay runner in `@ucre/replay`, added command/state/event/replay hashes, and locked the first golden replay fixture.
+- Files changed: `packages/replay/src/index.ts`, `packages/replay/src/index.test.ts`, `packages/replay/fixtures/golden-basic-replay.json`, `docs/adr/0007-replay-runner-hashes.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/replay/src packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and Phase 1 forbidden dependency/nondeterminism searches across `packages/core` and `packages/replay`.
+- Result: passed.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: Phase 1 exit gate is locally satisfied: deterministic command logs reproduce final state hash and event hash through a golden replay.
