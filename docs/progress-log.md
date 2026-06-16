@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 3 - Content Schema And Compiler
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: begin Phase 3 by adding validated content schemas for cards, enemies, relics, rewards, and manifests.
+- Next recommended round: add content compiler cross-reference validation and canonical manifest output.
 
 ## Round Template
 
@@ -181,5 +181,15 @@ Notes:
 - Files changed: `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, `packages/rulesets/fixtures/slay-like-completed-replay.json`, `docs/adr/0014-slay-like-objective-transitions.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/rulesets/src packages/replay/src packages/core/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across `packages/core`, `packages/rulesets`, and `packages/replay`.
 - Result: passed after refreshing replay hashes to include objective state and objective transition events.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `bbe00fb feat(rulesets): add slay like objectives`
 - Notes: Phase 2 exit gate is locally satisfied: a Slay-like encounter can complete through command dispatch, enemy intent resolves deterministically, reward draft modifies the deck, and replay reproduces the encounter.
+
+### 2026-06-17 - Round P3R1
+
+- Phase: Phase 3 - Content Schema And Compiler
+- Deliverable: added strict Zod authoring schemas for manifests, cards, relics, enemies, resources, zones, objectives, commands, effects, presentation profiles, and reward pools.
+- Files changed: `packages/content-schema/package.json`, `packages/content-schema/src/index.ts`, `packages/content-schema/src/index.test.ts`, `pnpm-lock.yaml`, `docs/adr/0015-content-authoring-schemas.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/content-schema/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across core, replay, rulesets, content schema, and content compiler packages.
+- Result: passed.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: Schema validation normalizes optional arrays/payloads and rejects malformed scalar values or unknown authoring keys before compiler cross-reference checks.
