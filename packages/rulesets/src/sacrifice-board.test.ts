@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   SACRIFICE_BOARD_CONTENT_MANIFEST_HASH,
+  SACRIFICE_BOARD_COMMANDS,
+  SACRIFICE_BOARD_EVENTS,
   SACRIFICE_BOARD_DEFAULT_LANE_COUNT,
   SACRIFICE_BOARD_FLAGS,
   SACRIFICE_BOARD_PHASES,
@@ -12,6 +14,7 @@ import {
   createSacrificeBoardGame,
   createSacrificeBoardSlotZoneId,
   createSacrificeBoardTopology,
+  executeSacrificeBoardCommand,
 } from "./sacrifice-board.js";
 
 describe("sacrifice-board topology", () => {
@@ -105,5 +108,145 @@ describe("sacrifice-board topology", () => {
     expect(() => createSacrificeBoardTopology({ laneCount: 0 })).toThrow(
       "Sacrifice-board lane count must be a positive integer, received 0.",
     );
+  });
+
+  it("summons a blood-cost creature by sacrificing board creatures", () => {
+    const result = executeSacrificeBoardCommand({
+      state: createSacrificeBoardGame({
+        gameId: "sacrifice-summon",
+        seed: "sacrifice-summon-seed",
+        startingHand: [
+          {
+            id: "wolf-hand-1",
+            definitionId: "wolf",
+          },
+        ],
+        startingBoard: [
+          {
+            id: "squirrel-board-1",
+            definitionId: "squirrel",
+            side: "player",
+            laneIndex: 0,
+          },
+          {
+            id: "squirrel-board-2",
+            definitionId: "squirrel",
+            side: "player",
+            laneIndex: 2,
+          },
+        ],
+      }),
+      command: {
+        id: "summon-wolf",
+        type: SACRIFICE_BOARD_COMMANDS.summon,
+        playerId: "player-1",
+        payload: {
+          cardId: "wolf-hand-1",
+          slotZoneId: createSacrificeBoardSlotZoneId("player", 1),
+          sacrificeObjectIds: ["squirrel-board-1", "squirrel-board-2"],
+        },
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("Sacrifice-board summon unexpectedly failed.");
+    }
+
+    expect(result.state.zones[createSacrificeBoardSlotZoneId("player", 1)]?.objectIds).toEqual([
+      "wolf-hand-1",
+    ]);
+    expect(result.state.zones[SACRIFICE_BOARD_ZONES.sacrificePile]?.objectIds).toEqual([
+      "squirrel-board-1",
+      "squirrel-board-2",
+    ]);
+    expect(result.state.zones[SACRIFICE_BOARD_ZONES.hand]?.objectIds).toEqual([]);
+    expect(result.state.resources["player-1"]?.values[SACRIFICE_BOARD_RESOURCES.bones]).toBe(2);
+    expect(result.events.at(-1)?.type).toBe(SACRIFICE_BOARD_EVENTS.creatureSummoned);
+  });
+
+  it("rejects summons without enough sacrifice or stored blood", () => {
+    const result = executeSacrificeBoardCommand({
+      state: createSacrificeBoardGame({
+        gameId: "sacrifice-invalid-summon",
+        seed: "sacrifice-invalid-summon-seed",
+        startingHand: [
+          {
+            id: "wolf-hand-1",
+            definitionId: "wolf",
+          },
+        ],
+      }),
+      command: {
+        id: "summon-wolf",
+        type: SACRIFICE_BOARD_COMMANDS.summon,
+        playerId: "player-1",
+        payload: {
+          cardId: "wolf-hand-1",
+          slotZoneId: createSacrificeBoardSlotZoneId("player", 1),
+          sacrificeObjectIds: [],
+        },
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("Sacrifice-board invalid summon unexpectedly succeeded.");
+    }
+    expect(result.errors[0]).toMatchObject({
+      code: "SACRIFICE_INSUFFICIENT_BLOOD",
+    });
+  });
+
+  it("resolves lane combat against defenders and open lanes", () => {
+    const result = executeSacrificeBoardCommand({
+      state: createSacrificeBoardGame({
+        gameId: "sacrifice-combat",
+        seed: "sacrifice-combat-seed",
+        startingBoard: [
+          {
+            id: "wolf-board-1",
+            definitionId: "wolf",
+            side: "player",
+            laneIndex: 0,
+          },
+          {
+            id: "stoat-board-1",
+            definitionId: "stoat",
+            side: "player",
+            laneIndex: 1,
+          },
+          {
+            id: "squirrel-opponent-1",
+            definitionId: "squirrel",
+            side: "opponent",
+            laneIndex: 0,
+          },
+        ],
+      }),
+      command: {
+        id: "resolve-combat",
+        type: SACRIFICE_BOARD_COMMANDS.resolveCombat,
+        playerId: "player-1",
+        payload: {},
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("Sacrifice-board combat unexpectedly failed.");
+    }
+
+    expect(result.state.objects["squirrel-opponent-1"]).toBeUndefined();
+    expect(result.state.zones[createSacrificeBoardSlotZoneId("opponent", 0)]?.objectIds).toEqual(
+      [],
+    );
+    expect(result.state.resources["player-1"]?.values[SACRIFICE_BOARD_RESOURCES.scale]).toBe(1);
+    expect(result.events.at(-1)).toMatchObject({
+      type: SACRIFICE_BOARD_EVENTS.laneCombatResolved,
+      payload: {
+        scaleDelta: 1,
+      },
+    });
   });
 });

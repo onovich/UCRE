@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 8 - Ruleset Pressure Tests
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add sacrifice-board sacrifice costs and lane combat.
+- Next recommended round: add sacrifice-board scale objective and replay.
 
 ## Round Template
 
@@ -461,5 +461,15 @@ Notes:
 - Files changed: `packages/rulesets/src/sacrifice-board.ts`, `packages/rulesets/src/sacrifice-board.test.ts`, `packages/rulesets/src/index.ts`, `docs/adr/0036-sacrifice-board-topology.md`, and this progress log.
 - Validation: `corepack pnpm test packages/rulesets/src/sacrifice-board.test.ts`, `corepack pnpm --filter @ucre/rulesets build`, Phase 8 architecture searches for nondeterminism, browser/presentation imports, and premature sacrifice-board leakage into core/replay/run/content packages, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after formatting the new scaffold file.
-- Commit: pending.
+- Commit: `0546467 feat(rulesets): scaffold sacrifice board topology`
 - Notes: Sacrifice-board now proves the shared core can model lane slots as board zones without introducing a new core board primitive before duplication is visible.
+
+### 2026-06-17 - Round P8R5
+
+- Phase: Phase 8 - Ruleset Pressure Tests
+- Deliverable: added sacrifice-board command and effect registries for creature summoning, sacrifice costs, bone gain, lane combat, defender damage/destruction, and open-lane scale gain.
+- Files changed: `packages/rulesets/src/sacrifice-board.ts`, `packages/rulesets/src/sacrifice-board.test.ts`, `docs/adr/0037-sacrifice-board-command-flow.md`, and this progress log.
+- Validation: `corepack pnpm test packages/rulesets/src/sacrifice-board.test.ts`, `corepack pnpm --filter @ucre/rulesets build`, `corepack pnpm lint`, Phase 8 architecture searches for nondeterminism, browser/presentation imports, and sacrifice-board leakage outside rulesets, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after converting readonly arrays in rule payloads/events to mutable JSON arrays and removing one unused import caught by lint.
+- Commit: pending.
+- Notes: Sacrifice-board behavior now uses core movement/resource/damage/destroy effects where appropriate while keeping lane targeting, sacrifice validation, and combat iteration inside the ruleset package.
