@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   completeRunNode,
+  createEncounterNodePayload,
   createLinearRunMap,
   createRunPackageIdentity,
   createRunState,
   findRunMapNode,
   hashRunState,
+  resolveRunNode,
 } from "./index.js";
 
 describe("run state and map graph", () => {
@@ -132,5 +134,110 @@ describe("run state and map graph", () => {
     expect(afterVictory.completedNodeIds).toEqual(["act-1:node:0", "act-1:node:1", "act-1:node:2"]);
     expect(afterVictory.availableNodeIds).toEqual([]);
     expect(hashRunState(afterVictory)).toMatch(/^ucre1-[0-9a-f]{8}$/);
+  });
+
+  it("resolves available encounter nodes from map payloads", () => {
+    const map = createLinearRunMap({
+      id: "act-1",
+      seed: "run-seed-1",
+      nodeKinds: ["start", "encounter", "boss", "victory"],
+      nodePayloads: [
+        {},
+        createEncounterNodePayload({
+          encounterId: "jaw-worm-1",
+          rulesetId: "slay-like",
+          contentManifestHash: "ucre1-slay-content",
+        }),
+        createEncounterNodePayload({
+          encounterId: "boss-1",
+          seed: "boss-seed-1",
+        }),
+        {},
+      ],
+    });
+    const state = createRunState({
+      id: "run-1",
+      seed: "run-seed-1",
+      rulesetId: "slay-like",
+      rulesVersion: "0.0.0",
+      contentManifestHash: "ucre1-default-content",
+      map,
+    });
+    const afterStart = completeRunNode({
+      state,
+      nodeId: "act-1:node:0",
+    });
+
+    const encounter = resolveRunNode({
+      state: afterStart,
+      nodeId: "act-1:node:1",
+    });
+    expect(encounter).toEqual({
+      ok: true,
+      node: map.nodes[1],
+      resolution: {
+        kind: "encounter",
+        nodeId: "act-1:node:1",
+        nodeKind: "encounter",
+        encounterId: "jaw-worm-1",
+        rulesetId: "slay-like",
+        contentManifestHash: "ucre1-slay-content",
+        seed: "run-seed-1:act-1:node:1",
+        payload: {
+          encounterId: "jaw-worm-1",
+          rulesetId: "slay-like",
+          contentManifestHash: "ucre1-slay-content",
+        },
+      },
+    });
+
+    const afterEncounter = completeRunNode({
+      state: afterStart,
+      nodeId: "act-1:node:1",
+    });
+    const boss = resolveRunNode({
+      state: afterEncounter,
+      nodeId: "act-1:node:2",
+    });
+
+    expect(boss.ok).toBe(true);
+    if (boss.ok) {
+      expect(boss.resolution).toMatchObject({
+        kind: "encounter",
+        nodeId: "act-1:node:2",
+        nodeKind: "boss",
+        encounterId: "boss-1",
+        rulesetId: "slay-like",
+        contentManifestHash: "ucre1-default-content",
+        seed: "boss-seed-1",
+      });
+    }
+  });
+
+  it("rejects missing and unavailable run nodes", () => {
+    const map = createLinearRunMap({
+      id: "act-1",
+      seed: "run-seed-1",
+      nodeKinds: ["start", "encounter"],
+    });
+    const state = createRunState({
+      id: "run-1",
+      seed: "run-seed-1",
+      rulesetId: "slay-like",
+      rulesVersion: "0.0.0",
+      contentManifestHash: "ucre1-content",
+      map,
+    });
+
+    expect(resolveRunNode({ state, nodeId: "missing" })).toEqual({
+      ok: false,
+      code: "RUN_NODE_NOT_FOUND",
+      message: "Run node does not exist: missing",
+    });
+    expect(resolveRunNode({ state, nodeId: "act-1:node:1" })).toEqual({
+      ok: false,
+      code: "RUN_NODE_NOT_AVAILABLE",
+      message: "Run node is not available: act-1:node:1",
+    });
   });
 });

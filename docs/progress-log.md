@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 7 - Roguelike Run Loop
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add node resolver and encounter nodes.
+- Next recommended round: add reward and deck modification loop.
 
 ## Round Template
 
@@ -361,5 +361,15 @@ Notes:
 - Files changed: `packages/run/*`, `tsconfig.packages.json`, `scripts/check-architecture.mjs`, `docs/adr/0029-run-state-package-boundary.md`, `docs/development-plan.md`, `pnpm-lock.yaml`, and this progress log.
 - Validation: `corepack pnpm test -- packages/run/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/run build`, full project validation, and architecture boundary searches confirming run remains free of DOM, React, Three.js, GSAP, Dexie, browser storage, frame timing, ambient random, and presentation dependencies.
 - Result: passed.
-- Commit: pending.
+- Commit: `f2e5d7d feat(run): add run state map graph`
 - Notes: Phase 7 starts with a reusable run/map layer outside encounter rulesets and before browser persistence.
+
+### 2026-06-17 - Round P7R2
+
+- Phase: Phase 7 - Roguelike Run Loop
+- Deliverable: added pure run node resolver contracts with default start/event/shop/rest/victory placeholders and encounter/boss node descriptors.
+- Files changed: `packages/run/src/index.ts`, `packages/run/src/index.test.ts`, `docs/adr/0030-run-node-resolver-contract.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/run/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/run build`, full project validation, and architecture boundary searches confirming resolvers remain pure and do not execute commands, mutate `GameState`, or touch browser/presentation dependencies.
+- Result: passed.
+- Commit: pending.
+- Notes: Run nodes now resolve to serializable descriptors; encounter execution and node completion stay separate for later save/replay integration.
