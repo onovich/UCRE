@@ -13,6 +13,7 @@ const requiredPaths = [
   "packages/content-compiler",
   "packages/replay",
   "packages/run",
+  "packages/run-dexie",
   "packages/presentation-core",
   "packages/theater-three",
   "packages/rulesets",

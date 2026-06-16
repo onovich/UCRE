@@ -17,6 +17,9 @@
       "path": "./packages/run"
     },
     {
+      "path": "./packages/run-dexie"
+    },
+    {
       "path": "./packages/presentation-core"
     },
     {

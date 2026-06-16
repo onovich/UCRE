@@ -57,6 +57,7 @@ packages/
   content-compiler/ # authoring data -> runtime bundle
   replay/           # command log, event log, state/event hashes
   run/              # RunState, map graph, node traversal, save contracts
+  run-dexie/        # browser IndexedDB persistence adapter for run saves
   simulation/       # bots, balance runs, automated smoke simulation
   presentation-core/# intents, beats, scheduling contracts
   theater-three/    # CardActor, ZoneAnchor, camera, VFX bindings

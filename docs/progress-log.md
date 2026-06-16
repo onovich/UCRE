@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 7 - Roguelike Run Loop
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add Dexie persistence adapter.
+- Next recommended round: add run replay viewer integration.
 
 ## Round Template
 
@@ -391,5 +391,15 @@ Notes:
 - Files changed: `packages/run/src/index.ts`, `packages/run/src/index.test.ts`, `docs/adr/0032-run-save-package-contract.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/run/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/run build`, full project validation, and architecture boundary searches confirming save contracts remain pure and do not depend on Dexie, browser storage, UI, or presentation packages.
 - Result: passed.
-- Commit: pending.
+- Commit: `bb6780a feat(run): add save package contracts`
 - Notes: Save/load can now be tested with deterministic package hashes before adding a browser persistence adapter.
+
+### 2026-06-17 - Round P7R5
+
+- Phase: Phase 7 - Roguelike Run Loop
+- Deliverable: added the `@ucre/run-dexie` persistence adapter for verified run save packages, with IndexedDB indexes, explicit update sequencing, list/read/delete operations, and fake-indexeddb Dexie smoke tests.
+- Files changed: `packages/run-dexie/*`, `tsconfig.packages.json`, `scripts/check-architecture.mjs`, `docs/development-plan.md`, `docs/adr/0033-run-dexie-persistence-adapter.md`, `pnpm-lock.yaml`, and this progress log.
+- Validation: `corepack pnpm test -- packages/run-dexie/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/run-dexie build`, full project validation, and architecture boundary searches confirming Dexie/IndexedDB are isolated to `@ucre/run-dexie`.
+- Result: passed after correcting the Dexie import form for TypeScript.
+- Commit: pending.
+- Notes: Persistence now stores only verified save packages and keeps wall-clock time out by requiring caller-provided update sequences.
