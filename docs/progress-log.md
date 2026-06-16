@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 2 - First Ruleset Vertical Slice
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add a Slay-like completed-encounter replay fixture and replay-runner validation.
+- Next recommended round: add explicit Slay-like objective state and terminal success/failure transitions.
 
 ## Round Template
 
@@ -161,5 +161,15 @@ Notes:
 - Files changed: `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, `docs/adr/0012-slay-like-sample-content.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/rulesets/src packages/core/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across `packages/core` and `packages/rulesets`.
 - Result: passed.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `68b091f feat(rulesets): expand slay like sample content`
 - Notes: The expanded catalog remains inline until Phase 3 moves card, enemy, relic, and reward data through schema validation and compilation.
+
+### 2026-06-17 - Round P2R6
+
+- Phase: Phase 2 - First Ruleset Vertical Slice
+- Deliverable: extended replay to accept ruleset initial state/effect registries and added a golden Slay-like completed-encounter replay fixture.
+- Files changed: `packages/replay/src/index.ts`, `packages/rulesets/src/slay-like-replay.test.ts`, `packages/rulesets/fixtures/slay-like-completed-replay.json`, `packages/rulesets/package.json`, `packages/rulesets/tsconfig.json`, `pnpm-lock.yaml`, `docs/adr/0013-replay-initial-state-effects.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/rulesets/src packages/replay/src packages/core/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across `packages/core`, `packages/rulesets`, and `packages/replay`.
+- Result: passed after rebuilding stale replay output before locking the Slay-like fixture hashes.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: The fixture replays draw, two Strike commands, and reward choice to reproduce final `complete` state and stable command/state/event/replay hashes.

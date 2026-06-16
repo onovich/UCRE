@@ -104,6 +104,10 @@ importers:
       '@ucre/core':
         specifier: workspace:*
         version: link:../core
+    devDependencies:
+      '@ucre/replay':
+        specifier: workspace:*
+        version: link:../replay
 
   packages/theater-three:
     dependencies:

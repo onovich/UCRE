@@ -1,0 +1,50 @@
+{
+  "input": {
+    "gameId": "slay-like-completed-replay",
+    "seed": "seed-slay-like-1",
+    "rulesVersion": "slay-like-0",
+    "contentManifestHash": "slay-like-inline-content-0",
+    "commands": [
+      {
+        "id": "command-1",
+        "type": "slay.drawCards",
+        "playerId": "player-1",
+        "payload": {
+          "count": 3
+        }
+      },
+      {
+        "id": "command-2",
+        "type": "slay.playCard",
+        "playerId": "player-1",
+        "payload": {
+          "cardId": "strike-1",
+          "targetObjectId": "enemy-jaw-worm"
+        }
+      },
+      {
+        "id": "command-3",
+        "type": "slay.playCard",
+        "playerId": "player-1",
+        "payload": {
+          "cardId": "strike-2",
+          "targetObjectId": "enemy-jaw-worm"
+        }
+      },
+      {
+        "id": "command-4",
+        "type": "slay.chooseReward",
+        "playerId": "player-1",
+        "payload": {
+          "rewardObjectId": "reward-card-iron-wave"
+        }
+      }
+    ]
+  },
+  "expected": {
+    "commandHash": "ucre1-61a14fb5",
+    "stateHash": "ucre1-76892c14",
+    "eventHash": "ucre1-91c0ffa2",
+    "replayHash": "ucre1-659eb4a5"
+  }
+}

@@ -6,6 +6,9 @@
   "dependencies": {
     "@ucre/core": "workspace:*"
   },
+  "devDependencies": {
+    "@ucre/replay": "workspace:*"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

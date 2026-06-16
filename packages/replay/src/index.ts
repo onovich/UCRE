@@ -9,6 +9,7 @@ import {
 import type {
   Command,
   CommandRegistry,
+  EffectRegistry,
   GameState,
   PresentationIntent,
   RuleError,
@@ -33,6 +34,8 @@ export interface ReplayInput {
   readonly contentManifestHash: string;
   readonly commands: readonly Command[];
   readonly commandRegistry: CommandRegistry;
+  readonly initialState?: GameState;
+  readonly effectRegistry?: EffectRegistry;
 }
 
 export interface ReplaySuccess {
@@ -64,12 +67,14 @@ export interface ReplayFailure {
 export type ReplayResult = ReplaySuccess | ReplayFailure;
 
 export function runReplay(input: ReplayInput): ReplayResult {
-  const initialState = createInitialGameState({
-    id: input.gameId,
-    seed: input.seed,
-    rulesVersion: input.rulesVersion,
-    contentManifestHash: input.contentManifestHash,
-  });
+  const initialState =
+    input.initialState ??
+    createInitialGameState({
+      id: input.gameId,
+      seed: input.seed,
+      rulesVersion: input.rulesVersion,
+      contentManifestHash: input.contentManifestHash,
+    });
   const commandHash = stableHash(input.commands);
   let currentState = initialState;
   const events: RuleEvent[] = [];
@@ -80,6 +85,7 @@ export function runReplay(input: ReplayInput): ReplayResult {
       state: currentState,
       command,
       commandRegistry: input.commandRegistry,
+      ...(input.effectRegistry ? { effectRegistry: input.effectRegistry } : {}),
     });
 
     events.push(...result.events);
