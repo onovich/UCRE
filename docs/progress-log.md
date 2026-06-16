@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 1 - Deterministic Rules Core
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add core rule engine contracts and deterministic RNG streams.
+- Next recommended round: implement object and zone helpers plus the first `MoveObject` effect.
 
 ## Round Template
 
@@ -41,5 +41,15 @@ Notes:
 - Files changed: root workspace/tooling config, `.github/workflows/ci.yml`, `apps/*`, `packages/*`, `scripts/check-architecture.mjs`, `scripts/check-docs.mjs`, `.codex/project-ops-workflow.json`, `.codex/project-git-workflow.json`, and workflow docs.
 - Validation: `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd` (`format`, `lint`, `typecheck`, `test`, `build`, `structureCheck`, `docsCheck`).
 - Result: passed after repairing a Windows Corepack `pnpm` script path issue and BOM-tolerant docs JSON parsing.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `61a0d59 chore: scaffold TypeScript workspace`
 - Notes: Phase 0 exit gate is locally satisfied: dependencies install, root validation passes, packages/apps build, and CI-equivalent workflow exists.
+
+### 2026-06-17 - Round P1R1
+
+- Phase: Phase 1 - Deterministic Rules Core
+- Deliverable: added public core contracts, immutable deterministic RNG streams, stable state/event hashing, and ADR 0001 for the boundary decision.
+- Files changed: `packages/core/src/contracts.ts`, `packages/core/src/rng.ts`, `packages/core/src/hash.ts`, core tests, `packages/core/src/index.ts`, `docs/adr/0001-core-contracts-and-rng.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and Phase 1 forbidden dependency/nondeterminism searches.
+- Result: passed.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: Core remains free of DOM, React, Three.js, GSAP, Dexie, browser storage, wall-clock reads, and ambient random reads.
