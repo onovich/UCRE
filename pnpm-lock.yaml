@@ -59,6 +59,9 @@ importers:
       '@ucre/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@ucre/presentation-core':
+        specifier: workspace:*
+        version: link:../../packages/presentation-core
       '@ucre/rulesets':
         specifier: workspace:*
         version: link:../../packages/rulesets

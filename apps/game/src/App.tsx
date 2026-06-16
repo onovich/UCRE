@@ -2,6 +2,11 @@ import { useMemo, useState } from "react";
 
 import type { Command, GameObject, GameState, JsonObject, RuleEvent } from "@ucre/core";
 import {
+  createBeatSchedule,
+  type PresentationBeat,
+  type PresentationIntent,
+} from "@ucre/presentation-core";
+import {
   SLAY_LIKE_CARD_DEFINITIONS,
   SLAY_LIKE_COMMANDS,
   SLAY_LIKE_PHASES,
@@ -18,6 +23,11 @@ const PLAYER_ID = "player-1";
 const INITIAL_GAME_ID = "slay-shell-1";
 const INITIAL_SEED = "game-shell-seed-1";
 const EVENT_LOG_LIMIT = 12;
+const SHELL_BEAT_SCHEDULE_CONFIG = {
+  defaultDurationMs: 240,
+  gapMs: 20,
+  trackBy: "kind",
+} as const;
 
 interface AppProps {
   appName?: string;
@@ -27,6 +37,8 @@ interface TimelineEntry {
   readonly id: string;
   readonly label: string;
   readonly events: readonly RuleEvent[];
+  readonly presentationIntents: readonly PresentationIntent[];
+  readonly beats: readonly PresentationBeat[];
   readonly diffs: readonly StateDiff[];
   readonly error?: string;
 }
@@ -42,6 +54,7 @@ interface CommandPreview {
   readonly label: string;
   readonly ok: boolean;
   readonly eventTypes: readonly string[];
+  readonly beatKinds: readonly string[];
   readonly diffs: readonly StateDiff[];
   readonly targetLabel?: string;
   readonly errors?: readonly string[];
@@ -74,6 +87,8 @@ export function App({ appName = "UCRE Game" }: AppProps) {
     [selectedEnemy, state],
   );
   const latestDiffs = timeline[0]?.diffs ?? [];
+  const latestEntry = timeline[0];
+  const latestBeats = latestEntry?.beats ?? [];
   const stateSummary = useMemo(() => stringifyStateSummary(state), [state]);
 
   function dispatchCommand(label: string, type: string, payload: JsonObject) {
@@ -88,6 +103,7 @@ export function App({ appName = "UCRE Game" }: AppProps) {
       command,
     });
     const diffs = result.ok ? summarizeStateDiff(state, result.state) : [];
+    const beatSchedule = createShellBeatSchedule(result.presentationIntents);
 
     if (result.ok) {
       setState(result.state);
@@ -99,6 +115,8 @@ export function App({ appName = "UCRE Game" }: AppProps) {
           id: command.id,
           label,
           events: result.events,
+          presentationIntents: result.presentationIntents,
+          beats: beatSchedule.beats,
           diffs,
           ...(result.ok
             ? {}
@@ -352,9 +370,38 @@ export function App({ appName = "UCRE Game" }: AppProps) {
                 ) : (
                   <span>No events emitted</span>
                 )}
+                <span>{formatEventBeatSummary(entry.beats)}</span>
               </li>
             ))}
           </ol>
+        </section>
+
+        <section className="beat-panel" aria-label="Presentation beats">
+          <h2>Presentation Beats</h2>
+          {!latestEntry ? <p className="quiet-text">No presentation beats yet.</p> : null}
+          {latestEntry && latestBeats.length === 0 ? (
+            <p className="quiet-text">Latest command emitted no presentation beats.</p>
+          ) : null}
+          {latestEntry && latestBeats.length > 0 ? (
+            <>
+              <p className="quiet-text">
+                Latest: {latestEntry.label} ({latestEntry.presentationIntents.length} intents)
+              </p>
+              <ol className="preview-list beat-list">
+                {latestBeats.map((beat) => (
+                  <li key={beat.id}>
+                    <div className="preview-heading">
+                      <strong>{beat.kind}</strong>
+                      <span>{formatBeatTiming(beat)}</span>
+                    </div>
+                    <span>{beat.type}</span>
+                    <span>event {beat.eventId}</span>
+                    <span>{formatBeatProfile(beat)}</span>
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : null}
         </section>
 
         <section className="preview-panel" aria-label="Command preview">
@@ -373,6 +420,9 @@ export function App({ appName = "UCRE Game" }: AppProps) {
                 {preview.errors?.length ? <span>{preview.errors.join(" ")}</span> : null}
                 {preview.eventTypes.length > 0 ? (
                   <span>{preview.eventTypes.join(" -> ")}</span>
+                ) : null}
+                {preview.beatKinds.length > 0 ? (
+                  <span>Beats {preview.beatKinds.join(" -> ")}</span>
                 ) : null}
                 {preview.diffs[0] ? (
                   <span>
@@ -498,16 +548,22 @@ function previewCommand(
     state,
     command,
   });
+  const beatSchedule = createShellBeatSchedule(result.presentationIntents);
 
   return {
     id: command.id,
     label,
     ok: result.ok,
     eventTypes: result.events.map((event) => event.type),
+    beatKinds: beatSchedule.beats.map((beat) => beat.kind),
     diffs: result.ok ? summarizeStateDiff(state, result.state) : [],
     ...(targetLabel ? { targetLabel } : {}),
     ...(result.ok ? {} : { errors: result.errors.map((error) => error.message) }),
   };
+}
+
+function createShellBeatSchedule(intents: readonly PresentationIntent[]) {
+  return createBeatSchedule(intents, SHELL_BEAT_SCHEDULE_CONFIG);
 }
 
 function summarizeStateDiff(before: GameState, after: GameState): readonly StateDiff[] {
@@ -587,6 +643,64 @@ function formatDiffValue(value: unknown): string {
   }
 
   return String(value);
+}
+
+function formatEventBeatSummary(beats: readonly PresentationBeat[]): string {
+  if (beats.length === 0) {
+    return "No presentation beats";
+  }
+
+  return `Beats ${beats.map((beat) => `${beat.kind}:${beat.eventId}`).join(" -> ")}`;
+}
+
+function formatBeatTiming(beat: PresentationBeat): string {
+  return `${beat.startTimeMs}-${beat.startTimeMs + beat.durationMs}ms`;
+}
+
+function formatBeatProfile(beat: PresentationBeat): string {
+  const { profile } = beat;
+
+  if (profile.kind === "move") {
+    return `${profile.objectId ?? "object"}: ${profile.fromZoneId ?? "?"} to ${
+      profile.toZoneId ?? "?"
+    }`;
+  }
+
+  if (profile.kind === "draw") {
+    return `${profile.drawnCount ?? 0} drawn from ${profile.fromZoneId ?? "?"} to ${
+      profile.toZoneId ?? "?"
+    }`;
+  }
+
+  if (profile.kind === "discard") {
+    return `${profile.objectId ?? "object"}: ${profile.fromZoneId ?? "?"} to ${
+      profile.toZoneId ?? "?"
+    }`;
+  }
+
+  if (profile.kind === "damage") {
+    return `${profile.objectId ?? "target"}: ${profile.amount ?? 0} damage, ${
+      profile.nextHitPoints ?? "?"
+    } hp`;
+  }
+
+  if (profile.kind === "destroy") {
+    return `${profile.objectId ?? "object"} destroyed from ${profile.fromZoneId ?? "?"}`;
+  }
+
+  if (profile.kind === "resource") {
+    return `${profile.resourceId ?? "resource"}: ${profile.previousValue ?? "?"} to ${
+      profile.nextValue ?? "?"
+    }`;
+  }
+
+  if (profile.kind === "counter") {
+    return `${profile.objectId ?? "object"} ${profile.counterId ?? "counter"}: ${
+      profile.previousValue ?? "?"
+    } to ${profile.nextValue ?? "?"}`;
+  }
+
+  return formatDiffValue(profile.payload);
 }
 
 function Metric({ label, value }: { readonly label: string; readonly value: number }) {

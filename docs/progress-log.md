@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 6 - Presentation Director
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add event-to-beat devtools view.
+- Next recommended round: add explicit presentation RNG/profile exit checks.
 
 ## Round Template
 
@@ -331,5 +331,15 @@ Notes:
 - Files changed: `packages/presentation-gsap/*`, `tsconfig.packages.json`, `pnpm-lock.yaml`, `docs/adr/0027-gsap-timeline-adapter-package.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/presentation-gsap/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/presentation-gsap build`, full project validation, and architecture boundary searches confirming GSAP imports are isolated to `@ucre/presentation-gsap`.
 - Result: passed after removing an unnecessary direct `@ucre/core` import from the adapter tests.
-- Commit: pending.
+- Commit: `4bb5704 feat(presentation): add gsap timeline adapter`
 - Notes: GSAP is isolated to the adapter package; presentation-core remains pure scheduler/data code.
+
+### 2026-06-17 - Round P6R4
+
+- Phase: Phase 6 - Presentation Director
+- Deliverable: added an event-to-beat devtools view in the game shell, including latest-command presentation beat details, event log beat summaries, and command preview beat kinds.
+- Files changed: `apps/game/package.json`, `apps/game/src/App.tsx`, `apps/game/src/styles.css`, `pnpm-lock.yaml`, and this progress log.
+- Validation: `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, system Chrome Playwright smoke for Draw and Strike beat mappings, mobile 390px overflow check, architecture boundary searches for nondeterminism/browser APIs/GSAP isolation/direct UI state mutation, and full project validation.
+- Result: passed.
+- Commit: pending.
+- Notes: The game shell consumes pure `presentation-core` schedules from command results and does not mutate rule state from presentation controls.

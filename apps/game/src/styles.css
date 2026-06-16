@@ -195,6 +195,7 @@ button:disabled {
 .log-panel,
 .state-panel,
 .preview-panel,
+.beat-panel,
 .diff-panel,
 .play-surface {
   background: #1f1e19;
@@ -206,6 +207,7 @@ button:disabled {
 .log-panel,
 .state-panel,
 .preview-panel,
+.beat-panel,
 .diff-panel {
   padding: 14px;
 }
@@ -215,6 +217,7 @@ button:disabled {
 .log-panel h2,
 .state-panel h2,
 .preview-panel h2,
+.beat-panel h2,
 .diff-panel h2 {
   font-size: 1rem;
   margin: 0 0 12px;
@@ -453,6 +456,16 @@ button:disabled {
   display: flex;
   gap: 8px;
   justify-content: space-between;
+}
+
+.beat-list {
+  margin-top: 10px;
+}
+
+.beat-list .preview-heading span {
+  color: #f3d68a;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .preview-ok,
