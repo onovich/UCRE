@@ -114,10 +114,16 @@ importers:
 
   packages/rulesets:
     dependencies:
+      '@ucre/content-schema':
+        specifier: workspace:*
+        version: link:../content-schema
       '@ucre/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@ucre/content-compiler':
+        specifier: workspace:*
+        version: link:../content-compiler
       '@ucre/replay':
         specifier: workspace:*
         version: link:../replay

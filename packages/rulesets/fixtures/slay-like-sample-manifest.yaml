@@ -1,0 +1,223 @@
+manifestId: slayLikeSample
+rulesetId: slay-like
+version: 1.0.0
+resources:
+  - id: energy
+    name: Energy
+    initialValue: 3
+    minValue: 0
+  - id: playerHp
+    name: Player HP
+    initialValue: 80
+    minValue: 0
+  - id: block
+    name: Block
+    initialValue: 0
+    minValue: 0
+zones:
+  - id: player.drawPile
+    kind: deck
+    owner: player
+    metadata:
+      starterDeck:
+        - objectId: strike-1
+          cardId: strike
+        - objectId: strike-2
+          cardId: strike
+        - objectId: strike-3
+          cardId: strike
+        - objectId: defend-1
+          cardId: defend
+        - objectId: defend-2
+          cardId: defend
+  - id: player.hand
+    kind: hand
+    owner: player
+  - id: player.discardPile
+    kind: discard
+    owner: player
+  - id: player.exhaustPile
+    kind: exhaust
+    owner: player
+  - id: player.playArea
+    kind: play
+    owner: player
+  - id: player.relics
+    kind: custom
+    owner: player
+    metadata:
+      relics:
+        - objectId: relic-burning-blood
+          relicId: burningBlood
+  - id: enemy.active
+    kind: enemy
+    owner: enemy
+    metadata:
+      enemies:
+        - objectId: enemy-jaw-worm
+          enemyId: jawWorm
+  - id: reward.choices
+    kind: reward
+    owner: shared
+cards:
+  - id: strike
+    name: Strike
+    cost: 1
+    targetPolicy: enemy
+    tags: [starter, attack]
+    effects:
+      - id: strikeDamage
+        type: DealDamage
+        payload:
+          amount: 6
+  - id: defend
+    name: Defend
+    cost: 1
+    tags: [starter, skill]
+    effects:
+      - id: defendBlock
+        type: GainResource
+        payload:
+          resourceId: block
+          amount: 5
+  - id: heavyStrike
+    name: Heavy Strike
+    cost: 2
+    targetPolicy: enemy
+    tags: [attack, reward]
+    effects:
+      - id: heavyStrikeDamage
+        type: DealDamage
+        payload:
+          amount: 10
+  - id: quickStrike
+    name: Quick Strike
+    cost: 0
+    targetPolicy: enemy
+    tags: [attack, reward]
+    effects:
+      - id: quickStrikeDamage
+        type: DealDamage
+        payload:
+          amount: 3
+  - id: guard
+    name: Guard
+    cost: 2
+    tags: [skill, reward]
+    effects:
+      - id: guardBlock
+        type: GainResource
+        payload:
+          resourceId: block
+          amount: 9
+  - id: pommelStrike
+    name: Pommel Strike
+    cost: 1
+    targetPolicy: enemy
+    tags: [attack, reward]
+    effects:
+      - id: pommelStrikeDamage
+        type: DealDamage
+        payload:
+          amount: 5
+  - id: wildSwing
+    name: Wild Swing
+    cost: 1
+    targetPolicy: enemy
+    tags: [attack, reward]
+    effects:
+      - id: wildSwingDamage
+        type: DealDamage
+        payload:
+          amount: 7
+  - id: ironWave
+    name: Iron Wave
+    cost: 1
+    targetPolicy: enemy
+    tags: [attack, skill, reward]
+    effects:
+      - id: ironWaveDamage
+        type: DealDamage
+        payload:
+          amount: 4
+      - id: ironWaveBlock
+        type: GainResource
+        payload:
+          resourceId: block
+          amount: 4
+  - id: shieldWall
+    name: Shield Wall
+    cost: 2
+    tags: [skill, reward]
+    effects:
+      - id: shieldWallBlock
+        type: GainResource
+        payload:
+          resourceId: block
+          amount: 12
+  - id: slice
+    name: Slice
+    cost: 0
+    targetPolicy: enemy
+    tags: [attack, reward]
+    effects:
+      - id: sliceDamage
+        type: DealDamage
+        payload:
+          amount: 4
+  - id: bodySlam
+    name: Body Slam
+    cost: 1
+    targetPolicy: enemy
+    tags: [attack, reward]
+    effects:
+      - id: bodySlamDamage
+        type: DealDamage
+        payload:
+          amount: 5
+  - id: brace
+    name: Brace
+    cost: 0
+    tags: [skill, reward]
+    effects:
+      - id: braceBlock
+        type: GainResource
+        payload:
+          resourceId: block
+          amount: 3
+relics:
+  - id: burningBlood
+    name: Burning Blood
+    description: Starter relic placeholder for encounter-completion healing rules.
+enemies:
+  - id: jawWorm
+    name: Jaw Worm
+    hp: 12
+    intents:
+      - id: jawWormBite
+        type: DealDamage
+        payload:
+          amount: 6
+  - id: acidSlime
+    name: Acid Slime
+    hp: 10
+    intents:
+      - id: acidSlimeTackle
+        type: DealDamage
+        payload:
+          amount: 5
+presentationProfiles:
+  - id: damageFallback
+    eventType: DealDamage
+    beatType: damage
+    fallback: true
+  - id: blockFallback
+    eventType: GainResource
+    beatType: resource
+    fallback: true
+rewardPools:
+  - id: act1Rewards
+    choices:
+      - cardId: heavyStrike
+      - cardId: ironWave
+      - cardId: brace

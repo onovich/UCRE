@@ -1,3 +1,6 @@
+import { fileURLToPath } from "node:url";
+
+import { loadContentManifestFile } from "@ucre/content-compiler";
 import { executeCommand } from "@ucre/core";
 import { describe, expect, it } from "vitest";
 
@@ -12,6 +15,7 @@ import {
   SLAY_LIKE_RESOURCES,
   SLAY_LIKE_ZONES,
   createSlayLikeCommandRegistry,
+  createSlayLikeContentFromManifest,
   createSlayLikeEncounter,
   executeSlayLikeCommand,
 } from "./slay-like.js";
@@ -62,6 +66,134 @@ describe("slay-like encounter scaffold", () => {
     expect(Object.keys(SLAY_LIKE_CARD_DEFINITIONS)).toHaveLength(12);
     expect(Object.keys(SLAY_LIKE_ENEMY_DEFINITIONS).sort()).toEqual(["acidSlime", "jawWorm"]);
     expect(Object.keys(SLAY_LIKE_RELIC_DEFINITIONS)).toEqual(["burningBlood"]);
+  });
+
+  it("loads compiled Slay-like content into the command flow", () => {
+    const compiled = loadContentManifestFile(
+      fileURLToPath(new URL("../fixtures/slay-like-sample-manifest.yaml", import.meta.url)),
+    );
+
+    expect(compiled.ok).toBe(true);
+    if (!compiled.ok) {
+      throw new Error(`Content manifest unexpectedly failed: ${compiled.errors[0]?.message}`);
+    }
+
+    const content = createSlayLikeContentFromManifest({
+      manifest: compiled.manifest,
+      manifestHash: compiled.manifestHash,
+      rewardPoolId: "act1Rewards",
+    });
+    const state = createSlayLikeEncounter({
+      gameId: "slay-content-1",
+      seed: "seed-content-1",
+      contentManifestHash: content.contentManifestHash,
+      cardDefinitions: content.cardDefinitions,
+      starterDeck: content.starterDeck,
+      enemies: content.enemies,
+      relics: content.relics,
+    });
+
+    expect(state.contentManifestHash).toBe(compiled.manifestHash);
+    expect(state.zones[SLAY_LIKE_ZONES.drawPile]?.objectIds).toEqual([
+      "strike-1",
+      "strike-2",
+      "strike-3",
+      "defend-1",
+      "defend-2",
+    ]);
+    expect(state.zones[SLAY_LIKE_ZONES.enemy]?.objectIds).toEqual(["enemy-jaw-worm"]);
+    expect(content.cardDefinitions.ironWave).toMatchObject({
+      damage: 4,
+      block: 4,
+    });
+
+    const draw = executeSlayLikeCommand({
+      state,
+      content,
+      command: {
+        id: "command-1",
+        type: SLAY_LIKE_COMMANDS.drawCards,
+        playerId: "player-1",
+        payload: {
+          count: 3,
+        },
+      },
+    });
+
+    expect(draw.ok).toBe(true);
+    if (!draw.ok) {
+      throw new Error("Draw command unexpectedly failed.");
+    }
+
+    const firstStrike = executeSlayLikeCommand({
+      state: draw.state,
+      content,
+      command: {
+        id: "command-2",
+        type: SLAY_LIKE_COMMANDS.playCard,
+        playerId: "player-1",
+        payload: {
+          cardId: "strike-1",
+          targetObjectId: "enemy-jaw-worm",
+        },
+      },
+    });
+
+    expect(firstStrike.ok).toBe(true);
+    if (!firstStrike.ok) {
+      throw new Error("First Strike command unexpectedly failed.");
+    }
+
+    const secondStrike = executeSlayLikeCommand({
+      state: firstStrike.state,
+      content,
+      command: {
+        id: "command-3",
+        type: SLAY_LIKE_COMMANDS.playCard,
+        playerId: "player-1",
+        payload: {
+          cardId: "strike-2",
+          targetObjectId: "enemy-jaw-worm",
+        },
+      },
+    });
+
+    expect(secondStrike.ok).toBe(true);
+    if (!secondStrike.ok) {
+      throw new Error("Second Strike command unexpectedly failed.");
+    }
+
+    expect(secondStrike.state.phase).toBe(SLAY_LIKE_PHASES.reward);
+    expect(secondStrike.state.zones[SLAY_LIKE_ZONES.reward]?.objectIds).toEqual([
+      "reward-card-heavy-strike",
+      "reward-card-iron-wave",
+      "reward-card-brace",
+    ]);
+
+    const chooseReward = executeSlayLikeCommand({
+      state: secondStrike.state,
+      content,
+      command: {
+        id: "command-4",
+        type: SLAY_LIKE_COMMANDS.chooseReward,
+        playerId: "player-1",
+        payload: {
+          rewardObjectId: "reward-card-iron-wave",
+        },
+      },
+    });
+
+    expect(chooseReward.ok).toBe(true);
+    if (!chooseReward.ok) {
+      throw new Error("Choose reward command unexpectedly failed.");
+    }
+
+    expect(chooseReward.state.phase).toBe(SLAY_LIKE_PHASES.complete);
+    expect(chooseReward.state.zones[SLAY_LIKE_ZONES.discardPile]?.objectIds).toEqual([
+      "strike-1",
+      "strike-2",
+      "reward-card-iron-wave",
+    ]);
   });
 
   it("draws cards through the ruleset command registry and core pipeline", () => {

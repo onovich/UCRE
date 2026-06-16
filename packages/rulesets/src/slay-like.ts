@@ -29,6 +29,14 @@ import type {
   RuleEvent,
   RuleResult,
 } from "@ucre/core";
+import type {
+  ContentCard,
+  ContentEffect,
+  ContentEnemy,
+  ContentManifest,
+  ContentRelic,
+  ContentZone,
+} from "@ucre/content-schema";
 
 export const SLAY_LIKE_RULESET_ID = "slay-like";
 export const SLAY_LIKE_RULES_VERSION = "slay-like-0";
@@ -133,9 +141,30 @@ export interface CreateSlayLikeEncounterInput {
   readonly seed: string;
   readonly contentManifestHash?: string;
   readonly playerId?: PlayerId;
+  readonly cardDefinitions?: Readonly<Record<string, SlayLikeCardDefinition>>;
   readonly starterDeck?: readonly SlayLikeStarterCard[];
   readonly enemies?: readonly SlayLikeEnemyDefinition[];
   readonly relics?: readonly SlayLikeRelicDefinition[];
+}
+
+export interface SlayLikeRuntimeContent {
+  readonly cardDefinitions: Readonly<Record<string, SlayLikeCardDefinition>>;
+  readonly rewardDraft: readonly SlayLikeRewardCard[];
+}
+
+export interface SlayLikeEncounterContent extends SlayLikeRuntimeContent {
+  readonly contentManifestHash: string;
+  readonly starterDeck: readonly SlayLikeStarterCard[];
+  readonly enemies: readonly SlayLikeEnemyDefinition[];
+  readonly relics: readonly SlayLikeRelicDefinition[];
+}
+
+export type SlayLikeRuntimeContentInput = Partial<SlayLikeRuntimeContent>;
+
+export interface CreateSlayLikeContentFromManifestInput {
+  readonly manifest: ContentManifest;
+  readonly manifestHash: string;
+  readonly rewardPoolId?: string;
 }
 
 export const SLAY_LIKE_CARD_DEFINITIONS: Readonly<Record<string, SlayLikeCardDefinition>> = {
@@ -269,8 +298,90 @@ export const SLAY_LIKE_REWARD_DRAFT: readonly SlayLikeRewardCard[] = [
   },
 ];
 
+export function createSlayLikeContentFromManifest(
+  input: CreateSlayLikeContentFromManifestInput,
+): SlayLikeEncounterContent {
+  if (input.manifest.rulesetId !== SLAY_LIKE_RULESET_ID) {
+    throw new Error(
+      `Cannot load manifest ${input.manifest.manifestId} for ruleset ${input.manifest.rulesetId} into ${SLAY_LIKE_RULESET_ID}.`,
+    );
+  }
+
+  const cardsById = new Map(input.manifest.cards.map((card) => [card.id, card] as const));
+  const enemiesById = new Map(input.manifest.enemies.map((enemy) => [enemy.id, enemy] as const));
+  const relicsById = new Map(input.manifest.relics.map((relic) => [relic.id, relic] as const));
+  const cardDefinitions = Object.fromEntries(
+    input.manifest.cards.map((card) => [card.id, createCardDefinitionFromContent(card)] as const),
+  );
+  const starterDeck = readObjectReferencesFromZoneMetadata(
+    requireContentZone(input.manifest, SLAY_LIKE_ZONES.drawPile),
+    "starterDeck",
+    "cardId",
+  ).map((entry) => {
+    requireContentEntry(cardsById, entry.definitionId, "card");
+
+    return {
+      id: entry.objectId,
+      definitionId: entry.definitionId,
+    };
+  });
+  const enemies = readObjectReferencesFromZoneMetadata(
+    requireContentZone(input.manifest, SLAY_LIKE_ZONES.enemy),
+    "enemies",
+    "enemyId",
+  ).map((entry) =>
+    createEnemyDefinitionFromContent(
+      requireContentEntry(enemiesById, entry.definitionId, "enemy"),
+      entry.objectId,
+    ),
+  );
+  const relics = readObjectReferencesFromZoneMetadata(
+    requireContentZone(input.manifest, SLAY_LIKE_ZONES.relic),
+    "relics",
+    "relicId",
+  ).map((entry) =>
+    createRelicDefinitionFromContent(
+      requireContentEntry(relicsById, entry.definitionId, "relic"),
+      entry.objectId,
+    ),
+  );
+  const rewardPool =
+    input.manifest.rewardPools.find((pool) => pool.id === input.rewardPoolId) ??
+    input.manifest.rewardPools[0];
+
+  if (!rewardPool) {
+    throw new Error(`Manifest ${input.manifest.manifestId} does not define a reward pool.`);
+  }
+
+  const rewardDraft = rewardPool.choices.map((choice) => {
+    requireContentEntry(cardsById, choice.cardId, "reward card");
+
+    return {
+      objectId: `reward-card-${toObjectIdSuffix(choice.cardId)}`,
+      definitionId: choice.cardId,
+    };
+  });
+
+  assertUniqueObjectIds([
+    ...starterDeck.map((card) => card.id),
+    ...enemies.map((enemy) => enemy.objectId),
+    ...relics.map((relic) => relic.objectId),
+    ...rewardDraft.map((reward) => reward.objectId),
+  ]);
+
+  return {
+    contentManifestHash: input.manifestHash,
+    cardDefinitions,
+    starterDeck,
+    enemies,
+    relics,
+    rewardDraft,
+  };
+}
+
 export function createSlayLikeEncounter(input: CreateSlayLikeEncounterInput): GameState {
   const playerId = input.playerId ?? "player-1";
+  const cardDefinitions = input.cardDefinitions ?? SLAY_LIKE_CARD_DEFINITIONS;
   let state: GameState = {
     ...createInitialGameState({
       id: input.gameId,
@@ -318,7 +429,7 @@ export function createSlayLikeEncounter(input: CreateSlayLikeEncounterInput): Ga
   state = putZone(state, createZone({ id: SLAY_LIKE_ZONES.reward, kind: "reward" }));
 
   for (const card of input.starterDeck ?? createDefaultStarterDeck()) {
-    state = putGameObjectInZone(state, createStarterCardObject(card, playerId));
+    state = putGameObjectInZone(state, createStarterCardObject(card, playerId, cardDefinitions));
   }
 
   for (const relic of input.relics ?? createDefaultRelics()) {
@@ -332,7 +443,11 @@ export function createSlayLikeEncounter(input: CreateSlayLikeEncounterInput): Ga
   return state;
 }
 
-export function createSlayLikeCommandRegistry(): CommandRegistry {
+export function createSlayLikeCommandRegistry(
+  input: SlayLikeRuntimeContentInput = {},
+): CommandRegistry {
+  const cardDefinitions = input.cardDefinitions ?? SLAY_LIKE_CARD_DEFINITIONS;
+
   return {
     [SLAY_LIKE_COMMANDS.drawCards]: {
       validate: (state, command) => {
@@ -364,13 +479,11 @@ export function createSlayLikeCommandRegistry(): CommandRegistry {
       ],
     },
     [SLAY_LIKE_COMMANDS.playCard]: {
-      validate: (state, command) => validatePlayCardCommand(state, command),
+      validate: (state, command) => validatePlayCardCommand(state, command, cardDefinitions),
       getEffects: (_state, command) => {
         const cardId = readCommandString(command, "cardId");
         const cardObject = _state.objects[cardId];
-        const definition = cardObject
-          ? SLAY_LIKE_CARD_DEFINITIONS[cardObject.definitionId]
-          : undefined;
+        const definition = cardObject ? cardDefinitions[cardObject.definitionId] : undefined;
 
         if (!cardObject || !definition) {
           return [];
@@ -541,7 +654,12 @@ export function createSlayLikeCommandRegistry(): CommandRegistry {
   };
 }
 
-export function createSlayLikeEffectRegistry(): EffectRegistry {
+export function createSlayLikeEffectRegistry(
+  input: SlayLikeRuntimeContentInput = {},
+): EffectRegistry {
+  const cardDefinitions = input.cardDefinitions ?? SLAY_LIKE_CARD_DEFINITIONS;
+  const rewardDraft = input.rewardDraft ?? SLAY_LIKE_REWARD_DRAFT;
+
   return {
     ...createCoreEffectRegistry(),
     [SLAY_LIKE_EFFECTS.resolveEnemyIntent]: (state, effect, context) =>
@@ -549,7 +667,10 @@ export function createSlayLikeEffectRegistry(): EffectRegistry {
     [SLAY_LIKE_EFFECTS.startPlayerTurn]: (state, effect, context) =>
       startPlayerTurn(state, effect, context.commandId),
     [SLAY_LIKE_EFFECTS.openRewardDraft]: (state, effect, context) =>
-      openRewardDraft(state, effect, context.commandId),
+      openRewardDraft(state, effect, context.commandId, {
+        cardDefinitions,
+        rewardDraft,
+      }),
     [SLAY_LIKE_EFFECTS.completeEncounter]: (state, effect, context) =>
       completeEncounter(state, effect, context.commandId),
   };
@@ -558,14 +679,15 @@ export function createSlayLikeEffectRegistry(): EffectRegistry {
 export interface ExecuteSlayLikeCommandInput {
   readonly state: GameState;
   readonly command: Command;
+  readonly content?: SlayLikeRuntimeContentInput;
 }
 
 export function executeSlayLikeCommand(input: ExecuteSlayLikeCommandInput): RuleResult {
   return executeCommand({
     state: input.state,
     command: input.command,
-    commandRegistry: createSlayLikeCommandRegistry(),
-    effectRegistry: createSlayLikeEffectRegistry(),
+    commandRegistry: createSlayLikeCommandRegistry(input.content),
+    effectRegistry: createSlayLikeEffectRegistry(input.content),
   });
 }
 
@@ -597,6 +719,148 @@ export function createDefaultRelics(): readonly SlayLikeRelicDefinition[] {
   return [burningBlood];
 }
 
+interface ContentObjectReference {
+  readonly objectId: string;
+  readonly definitionId: string;
+}
+
+function createCardDefinitionFromContent(card: ContentCard): SlayLikeCardDefinition {
+  if (card.targetPolicy !== "none" && card.targetPolicy !== "enemy") {
+    throw new Error(
+      `Slay-like card ${card.id} uses unsupported target policy ${card.targetPolicy}.`,
+    );
+  }
+
+  const damage = sumEffectAmounts(card.effects, DEAL_DAMAGE_EFFECT_TYPE);
+  const block = sumEffectAmounts(
+    card.effects,
+    GAIN_RESOURCE_EFFECT_TYPE,
+    (effect) => effect.payload.resourceId === SLAY_LIKE_RESOURCES.block,
+  );
+
+  return {
+    id: card.id,
+    name: card.name,
+    cost: card.cost,
+    requiresTarget: card.targetPolicy === "enemy",
+    ...(damage > 0 ? { damage } : {}),
+    ...(block > 0 ? { block } : {}),
+  };
+}
+
+function createEnemyDefinitionFromContent(
+  enemy: ContentEnemy,
+  objectId: string,
+): SlayLikeEnemyDefinition {
+  return {
+    id: enemy.id,
+    objectId,
+    name: enemy.name,
+    hp: enemy.hp,
+    block: enemy.block,
+    intentDamage: sumEffectAmounts(enemy.intents, DEAL_DAMAGE_EFFECT_TYPE),
+  };
+}
+
+function createRelicDefinitionFromContent(
+  relic: ContentRelic,
+  objectId: string,
+): SlayLikeRelicDefinition {
+  return {
+    id: relic.id,
+    objectId,
+    name: relic.name,
+    description: relic.description,
+  };
+}
+
+function requireContentZone(manifest: ContentManifest, zoneId: string): ContentZone {
+  const zone = manifest.zones.find((entry) => entry.id === zoneId);
+  if (!zone) {
+    throw new Error(`Manifest ${manifest.manifestId} is missing Slay-like zone ${zoneId}.`);
+  }
+
+  return zone;
+}
+
+function requireContentEntry<T>(entries: ReadonlyMap<string, T>, id: string, label: string): T {
+  const entry = entries.get(id);
+  if (!entry) {
+    throw new Error(`Slay-like manifest references missing ${label} ${id}.`);
+  }
+
+  return entry;
+}
+
+function readObjectReferencesFromZoneMetadata(
+  zone: ContentZone,
+  metadataKey: string,
+  definitionKey: string,
+): readonly ContentObjectReference[] {
+  const value = zone.metadata[metadataKey];
+  if (!Array.isArray(value)) {
+    throw new Error(`Zone ${zone.id} metadata.${metadataKey} must be an array.`);
+  }
+
+  return value.map((entry, index) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error(`Zone ${zone.id} metadata.${metadataKey}.${index} must be an object.`);
+    }
+
+    const record = entry as Readonly<Record<string, unknown>>;
+    const objectId = record.objectId;
+    const definitionId = record[definitionKey];
+
+    if (typeof objectId !== "string" || typeof definitionId !== "string") {
+      throw new Error(
+        `Zone ${zone.id} metadata.${metadataKey}.${index} must define string objectId and ${definitionKey}.`,
+      );
+    }
+
+    return {
+      objectId,
+      definitionId,
+    };
+  });
+}
+
+function sumEffectAmounts(
+  effects: readonly ContentEffect[],
+  effectType: string,
+  predicate: (effect: ContentEffect) => boolean = () => true,
+): number {
+  return effects
+    .filter((effect) => effect.type === effectType && predicate(effect))
+    .reduce((sum, effect) => {
+      const amount = effect.payload.amount;
+      if (typeof amount !== "number") {
+        throw new Error(`Effect ${effect.id} of type ${effect.type} must define numeric amount.`);
+      }
+
+      return sum + amount;
+    }, 0);
+}
+
+function assertUniqueObjectIds(objectIds: readonly string[]): void {
+  const seen = new Set<string>();
+
+  for (const objectId of objectIds) {
+    if (seen.has(objectId)) {
+      throw new Error(`Slay-like content produced duplicate object id ${objectId}.`);
+    }
+
+    seen.add(objectId);
+  }
+}
+
+function toObjectIdSuffix(id: string): string {
+  return id
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/[^A-Za-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+}
+
 function createInitialSlayLikeObjectives(playerId: PlayerId): readonly ObjectiveState[] {
   return [
     {
@@ -618,8 +882,12 @@ function createInitialSlayLikeObjectives(playerId: PlayerId): readonly Objective
   ];
 }
 
-function createStarterCardObject(card: SlayLikeStarterCard, ownerId: PlayerId): GameObject {
-  const definition = SLAY_LIKE_CARD_DEFINITIONS[card.definitionId];
+function createStarterCardObject(
+  card: SlayLikeStarterCard,
+  ownerId: PlayerId,
+  cardDefinitions: Readonly<Record<string, SlayLikeCardDefinition>>,
+): GameObject {
+  const definition = cardDefinitions[card.definitionId];
   if (!definition) {
     throw new Error(`Unknown Slay-like starter card definition: ${card.definitionId}`);
   }
@@ -665,8 +933,12 @@ function createRelicObject(relic: SlayLikeRelicDefinition, ownerId: PlayerId): G
   });
 }
 
-function createRewardCardObject(card: SlayLikeRewardCard, ownerId: PlayerId): GameObject {
-  const definition = SLAY_LIKE_CARD_DEFINITIONS[card.definitionId];
+function createRewardCardObject(
+  card: SlayLikeRewardCard,
+  ownerId: PlayerId,
+  cardDefinitions: Readonly<Record<string, SlayLikeCardDefinition>>,
+): GameObject {
+  const definition = cardDefinitions[card.definitionId];
   if (!definition) {
     throw new Error(`Unknown Slay-like reward card definition: ${card.definitionId}`);
   }
@@ -683,7 +955,11 @@ function createRewardCardObject(card: SlayLikeRewardCard, ownerId: PlayerId): Ga
   });
 }
 
-function validatePlayCardCommand(state: GameState, command: Command) {
+function validatePlayCardCommand(
+  state: GameState,
+  command: Command,
+  cardDefinitions: Readonly<Record<string, SlayLikeCardDefinition>>,
+) {
   const errors: RuleError[] = [];
 
   if (state.phase !== SLAY_LIKE_PHASES.playerTurn) {
@@ -699,7 +975,7 @@ function validatePlayCardCommand(state: GameState, command: Command) {
 
   const cardId = readCommandString(command, "cardId");
   const cardObject = state.objects[cardId];
-  const definition = cardObject ? SLAY_LIKE_CARD_DEFINITIONS[cardObject.definitionId] : undefined;
+  const definition = cardObject ? cardDefinitions[cardObject.definitionId] : undefined;
 
   if (!cardObject) {
     errors.push({
@@ -1024,6 +1300,7 @@ function openRewardDraft(
   state: GameState,
   effect: Effect,
   commandId: Command["id"] | undefined,
+  content: SlayLikeRuntimeContent,
 ): RuleResult {
   let playerId: string;
   try {
@@ -1055,7 +1332,7 @@ function openRewardDraft(
     });
   }
 
-  for (const rewardCard of SLAY_LIKE_REWARD_DRAFT) {
+  for (const rewardCard of content.rewardDraft) {
     if (state.objects[rewardCard.objectId]) {
       return failure(state, {
         code: "SLAY_REWARD_OBJECT_EXISTS",
@@ -1073,8 +1350,11 @@ function openRewardDraft(
     phase: SLAY_LIKE_PHASES.reward,
   };
 
-  for (const rewardCard of SLAY_LIKE_REWARD_DRAFT) {
-    nextState = putGameObjectInZone(nextState, createRewardCardObject(rewardCard, playerId));
+  for (const rewardCard of content.rewardDraft) {
+    nextState = putGameObjectInZone(
+      nextState,
+      createRewardCardObject(rewardCard, playerId, content.cardDefinitions),
+    );
   }
 
   const event: RuleEvent = {
@@ -1084,8 +1364,8 @@ function openRewardDraft(
       playerId,
       previousPhase: state.phase,
       nextPhase: SLAY_LIKE_PHASES.reward,
-      rewardObjectIds: SLAY_LIKE_REWARD_DRAFT.map((rewardCard) => rewardCard.objectId),
-      rewardDefinitionIds: SLAY_LIKE_REWARD_DRAFT.map((rewardCard) => rewardCard.definitionId),
+      rewardObjectIds: content.rewardDraft.map((rewardCard) => rewardCard.objectId),
+      rewardDefinitionIds: content.rewardDraft.map((rewardCard) => rewardCard.definitionId),
     },
     ...eventCause(commandId, effect),
   };

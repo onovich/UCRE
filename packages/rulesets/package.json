@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@ucre/content-schema": "workspace:*",
     "@ucre/core": "workspace:*"
   },
   "devDependencies": {
+    "@ucre/content-compiler": "workspace:*",
     "@ucre/replay": "workspace:*"
   },
   "exports": {

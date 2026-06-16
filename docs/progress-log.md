@@ -4,9 +4,9 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 ## Current Status
 
-- Current phase: Phase 3 - Content Schema And Compiler
+- Current phase: Phase 4 - Game Shell And Devtools
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: feed compiled content into Slay-like ruleset tests.
+- Next recommended round: scaffold the React game shell around command dispatch.
 
 ## Round Template
 
@@ -221,5 +221,15 @@ Notes:
 - Files changed: `packages/content-compiler/package.json`, `packages/content-compiler/src/index.ts`, `packages/content-compiler/src/index.test.ts`, `packages/content-compiler/src/cli.ts`, `packages/content-compiler/fixtures/slay-like-valid-manifest.json5`, `packages/content-compiler/fixtures/slay-like-valid-manifest.yaml`, `pnpm-lock.yaml`, `docs/adr/0018-content-authoring-loaders.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/content-compiler/src packages/content-schema/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `corepack pnpm --filter @ucre/content-compiler build`, `corepack pnpm content:lint packages/content-compiler/fixtures/slay-like-valid-manifest.json5`, `corepack pnpm content:lint packages/content-compiler/fixtures/slay-like-valid-manifest.yaml`, full project validation, and forbidden dependency/nondeterminism searches across core, replay, rulesets, content schema, and content compiler packages.
 - Result: passed.
-- Commit: pending.
+- Commit: `aec9bd2 feat(content): add authoring file loaders`
 - Notes: JSON, JSON5, and YAML variants of the sample manifest produce the same canonical manifest hash, `ucre1-03523306`.
+
+### 2026-06-17 - Round P3R5
+
+- Phase: Phase 3 - Content Schema And Compiler
+- Deliverable: added a Slay-like compiled-content adapter, a full YAML sample manifest, and a ruleset command-flow test that loads compiler-validated content into the Phase 2 encounter path.
+- Files changed: `packages/rulesets/package.json`, `packages/rulesets/tsconfig.json`, `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, `packages/rulesets/fixtures/slay-like-sample-manifest.yaml`, `pnpm-lock.yaml`, `docs/adr/0019-slay-like-compiled-content.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/rulesets/src packages/content-compiler/src packages/content-schema/src`, `corepack pnpm typecheck`, `corepack pnpm content:lint packages/rulesets/fixtures/slay-like-sample-manifest.yaml`, full project validation, and forbidden dependency/nondeterminism searches across core, replay, rulesets, content schema, and content compiler packages.
+- Result: passed.
+- Commit: pending.
+- Notes: Phase 3 exit gate is locally satisfied: authoring content is schema-validated, compiled, linted, hashed, and loaded into Slay-like ruleset command tests without UI or file parsing inside the ruleset runtime.
