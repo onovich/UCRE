@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   THEATER_ANCHOR_IDS,
+  createTheaterActorPlacements,
   createTheaterAnchorLayout,
   groupTheaterActorsByAnchor,
 } from "./index.js";
@@ -55,5 +56,88 @@ describe("theater-three anchor layout", () => {
     expect(groups.discardPile).toEqual([]);
     expect(groups.enemy.map((actor) => actor.label)).toEqual(["Jaw Worm"]);
     expect(groups.reward).toEqual([]);
+  });
+
+  it("creates centered hand fan placements and stacked pile placements", () => {
+    const placements = createTheaterActorPlacements([
+      {
+        id: "hand-left",
+        label: "Strike",
+        anchorId: THEATER_ANCHOR_IDS.hand,
+        kind: "card",
+      },
+      {
+        id: "hand-center",
+        label: "Defend",
+        anchorId: THEATER_ANCHOR_IDS.hand,
+        kind: "card",
+      },
+      {
+        id: "hand-right",
+        label: "Bash",
+        anchorId: THEATER_ANCHOR_IDS.hand,
+        kind: "card",
+      },
+      {
+        id: "discard-bottom",
+        label: "Strike",
+        anchorId: THEATER_ANCHOR_IDS.discardPile,
+        kind: "card",
+      },
+      {
+        id: "discard-top",
+        label: "Defend",
+        anchorId: THEATER_ANCHOR_IDS.discardPile,
+        kind: "card",
+      },
+    ]);
+
+    const handPlacements = placements.filter(
+      (placement) => placement.anchorId === THEATER_ANCHOR_IDS.hand,
+    );
+    expect(handPlacements.map((placement) => placement.actor.id)).toEqual([
+      "hand-left",
+      "hand-center",
+      "hand-right",
+    ]);
+    expect(handPlacements[0]?.position[0]).toBeCloseTo(-0.52);
+    expect(handPlacements[1]?.position[0]).toBeCloseTo(0);
+    expect(handPlacements[2]?.position[0]).toBeCloseTo(0.52);
+    expect(handPlacements[0]?.rotation[2]).toBeCloseTo(0.14);
+    expect(handPlacements[1]?.rotation[2]).toBeCloseTo(0);
+    expect(handPlacements[2]?.rotation[2]).toBeCloseTo(-0.14);
+
+    const discardPlacements = placements.filter(
+      (placement) => placement.anchorId === THEATER_ANCHOR_IDS.discardPile,
+    );
+    expect(discardPlacements[0]?.position[0]).toBeCloseTo(3.1);
+    expect(discardPlacements[1]?.position[0]).toBeCloseTo(3.135);
+    expect(discardPlacements[0]?.position[1]).toBeCloseTo(0.055);
+    expect(discardPlacements[1]?.position[1]).toBeCloseTo(0.061);
+  });
+
+  it("keeps actor identity stable while anchor targets change", () => {
+    const [drawPlacement] = createTheaterActorPlacements([
+      {
+        id: "strike-1",
+        label: "Strike",
+        anchorId: THEATER_ANCHOR_IDS.drawPile,
+        kind: "card",
+      },
+    ]);
+    const [handPlacement] = createTheaterActorPlacements([
+      {
+        id: "strike-1",
+        label: "Strike",
+        anchorId: THEATER_ANCHOR_IDS.hand,
+        kind: "card",
+      },
+    ]);
+
+    expect(drawPlacement?.actor.id).toBe("strike-1");
+    expect(handPlacement?.actor.id).toBe("strike-1");
+    expect(drawPlacement?.anchorId).toBe(THEATER_ANCHOR_IDS.drawPile);
+    expect(handPlacement?.anchorId).toBe(THEATER_ANCHOR_IDS.hand);
+    expect(drawPlacement?.position).not.toEqual(handPlacement?.position);
   });
 });

@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 5 - Three.js Card Theater Vertical Slice
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add draw and discard movement animation with skip/snap support.
+- Next recommended round: add card texture generation path and complete the Phase 5 exit smoke.
 
 ## Round Template
 
@@ -281,5 +281,15 @@ Notes:
 - Files changed: `packages/theater-three/src/index.ts`, `packages/theater-three/src/index.test.ts`, `apps/game/src/TheaterCanvas.tsx`, `apps/game/index.html`, `docs/adr/0022-theater-actor-anchor-sync.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/theater-three/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/theater-three build`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, browser actor overlay smoke for Draw and Strike, headless browser console smoke, mobile 390px canvas/layout overflow check, Chrome headless screenshot pixel smoke with non-background canvas-center ratio `0.2609`, full project validation, and architecture boundary searches.
 - Result: passed.
-- Commit: pending.
+- Commit: `2e28a14 feat(theater): sync actors to anchors`
 - Notes: Theater actors preserve object IDs and labels for later movement diffing while keeping Three.js and theater contracts out of deterministic packages.
+
+### 2026-06-17 - Round P5R3
+
+- Phase: Phase 5 - Three.js Card Theater Vertical Slice
+- Deliverable: added a persistent theater actor mesh pool, basic draw/discard movement interpolation, pure placement tests for hand fan and stacked piles, and a UI skip control that snaps animations to the latest rule-correct anchors.
+- Files changed: `packages/theater-three/src/index.ts`, `packages/theater-three/src/index.test.ts`, `apps/game/src/TheaterCanvas.tsx`, `apps/game/src/styles.css`, `docs/adr/0023-theater-local-movement-snap.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/theater-three/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/theater-three build`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, browser Draw/Skip and Strike/Skip canvas-hash smoke, headless console smoke, mobile 390px skip/layout overflow check, Chrome headless screenshot pixel smoke with non-background canvas-center ratio `0.2609`, full project validation, and architecture boundary searches with frame timing isolated to `@ucre/theater-three`.
+- Result: passed.
+- Commit: pending.
+- Notes: Animation timing stays local to `@ucre/theater-three`; deterministic packages still have no frame timing or presentation dependency.

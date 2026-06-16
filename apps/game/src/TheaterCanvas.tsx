@@ -71,6 +71,14 @@ export function TheaterCanvas({ state }: TheaterCanvasProps) {
         <span>Hand {actorGroups.hand.length}</span>
         <span>Discard {actorGroups.discardPile.length}</span>
         <span>Enemy {actorGroups.enemy.length}</span>
+        <button
+          className="theater-skip"
+          type="button"
+          aria-label="Skip theater animation"
+          onClick={() => theaterRef.current?.skipAnimations()}
+        >
+          Skip
+        </button>
       </div>
     </section>
   );

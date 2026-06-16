@@ -164,7 +164,8 @@ button:disabled {
   right: 20px;
 }
 
-.theater-overlay span {
+.theater-overlay span,
+.theater-skip {
   background: rgb(21 21 18 / 82%);
   border: 1px solid #4d493a;
   border-radius: 999px;
@@ -172,6 +173,16 @@ button:disabled {
   font-size: 0.82rem;
   font-weight: 800;
   padding: 6px 9px;
+}
+
+.theater-skip {
+  cursor: pointer;
+  min-height: 30px;
+}
+
+.theater-skip:hover {
+  background: rgb(31 35 27 / 92%);
+  border-color: #8c7d4d;
 }
 
 .dashboard-grid {
