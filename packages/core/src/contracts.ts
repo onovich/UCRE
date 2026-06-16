@@ -83,6 +83,22 @@ export interface PresentationIntent {
   readonly payload: JsonObject;
 }
 
+export interface Trigger {
+  readonly id: string;
+  readonly type: string;
+  readonly payload: JsonObject;
+  readonly sourceEventId?: RuleEventId;
+}
+
+export type ObjectiveStatus = "pending" | "succeeded" | "failed";
+
+export interface ObjectiveState {
+  readonly id: string;
+  readonly type: string;
+  readonly status: ObjectiveStatus;
+  readonly payload: JsonObject;
+}
+
 export interface RuleError {
   readonly code: string;
   readonly message: string;
@@ -100,6 +116,8 @@ export interface GameState {
   readonly objects: Readonly<Record<GameObjectId, GameObject>>;
   readonly zones: Readonly<Record<ZoneId, Zone>>;
   readonly resources: Readonly<Record<PlayerId, ResourceState>>;
+  readonly triggerQueue: readonly Trigger[];
+  readonly objectives: readonly ObjectiveState[];
   readonly flags: JsonObject;
 }
 
@@ -138,6 +156,8 @@ export function createInitialGameState(input: CreateGameStateInput): GameState {
     objects: {},
     zones: {},
     resources: {},
+    triggerQueue: [],
+    objectives: [],
     flags: {},
   };
 }

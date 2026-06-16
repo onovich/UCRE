@@ -13,6 +13,7 @@ export function createEngineIdentity(version = "0.0.0"): EngineIdentity {
 }
 
 export * from "./contracts.js";
+export * from "./checks.js";
 export * from "./effects.js";
 export * from "./hash.js";
 export * from "./pipeline.js";

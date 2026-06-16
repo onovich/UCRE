@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 1 - Deterministic Rules Core
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: implement trigger queue and objective check helpers.
+- Next recommended round: implement replay runner and first golden replay.
 
 ## Round Template
 
@@ -91,5 +91,15 @@ Notes:
 - Files changed: `packages/core/src/pipeline.ts`, `packages/core/src/pipeline.test.ts`, `packages/core/src/index.ts`, `docs/adr/0005-command-effect-pipeline.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and Phase 1 forbidden dependency/nondeterminism searches.
 - Result: passed after repairing `exactOptionalPropertyTypes`, readonly accumulator, and invalid-payload state preservation issues.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `f0a21c3 feat(core): add command effect pipeline`
 - Notes: Commands validate before effects, effects resolve in order, and payload decode failures keep the current state unchanged.
+
+### 2026-06-17 - Round P1R6
+
+- Phase: Phase 1 - Deterministic Rules Core
+- Deliverable: added serializable trigger queue and objective state to `GameState`, plus pure helpers for queueing triggers, popping triggers, and evaluating objective predicates.
+- Files changed: `packages/core/src/contracts.ts`, `packages/core/src/checks.ts`, core checks/contracts/hash tests, `packages/core/src/index.ts`, `docs/adr/0006-trigger-objective-checks.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and Phase 1 forbidden dependency/nondeterminism searches.
+- Result: passed.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: Terminal objective transitions emit once, and queued triggers are part of hashed `GameState`.

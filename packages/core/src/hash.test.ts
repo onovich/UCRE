@@ -20,6 +20,8 @@ describe("stable hashing", () => {
       phase: "setup",
       zones: {},
       objects: {},
+      triggerQueue: [],
+      objectives: [],
       flags: {},
       id: "game-1",
       seed: "seed-1",

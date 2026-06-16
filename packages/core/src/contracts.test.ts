@@ -23,6 +23,8 @@ describe("core contracts", () => {
       objects: {},
       zones: {},
       resources: {},
+      triggerQueue: [],
+      objectives: [],
       flags: {},
     });
   });
