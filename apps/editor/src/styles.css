@@ -238,6 +238,7 @@ button:disabled {
 .editor-form select,
 .effect-row input,
 .effect-row select,
+.choice-row input,
 .validation-panel textarea {
   background: #0e1211;
   border: 1px solid #35423f;
@@ -274,6 +275,28 @@ button:disabled {
   gap: 10px;
   grid-template-columns: minmax(130px, 1fr) minmax(140px, 1fr) minmax(90px, 0.7fr) auto;
   padding: 10px;
+}
+
+.choice-row {
+  align-items: end;
+  background: #111614;
+  border: 1px solid #2a3632;
+  border-radius: 6px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(150px, 1fr) minmax(90px, 0.5fr) auto;
+  padding: 10px;
+}
+
+.choice-row label {
+  display: grid;
+  gap: 6px;
+}
+
+.choice-row label span {
+  color: #aebbb6;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .manifest-summary {
@@ -381,7 +404,8 @@ button:disabled {
   }
 
   .editor-form,
-  .effect-row {
+  .effect-row,
+  .choice-row {
     grid-template-columns: 1fr;
   }
 }

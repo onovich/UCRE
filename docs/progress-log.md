@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 9 - Editor, Simulation, And Balance Tools
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add reward pool editor.
+- Next recommended round: add content compile round-trip.
 
 ## Round Template
 
@@ -501,5 +501,15 @@ Notes:
 - Files changed: `apps/editor/src/App.tsx`, `apps/editor/src/card-editor-model.ts`, `apps/editor/src/card-editor-model.test.ts`, `apps/editor/src/styles.css`, and this progress log.
 - Validation: `corepack pnpm test apps/editor/src/card-editor-model.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/editor build`, Playwright editor smoke on `http://127.0.0.1:5175` for relic/enemy creation, enemy HP schema-error repair, clean console, and 390px mobile overflow, Phase 9 architecture searches for browser-safe compiler imports and pure package dependency leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed.
-- Commit: pending.
+- Commit: `e69cb15 feat(editor): add relic enemy editing`
 - Notes: Relics and enemies now flow through the same draft-to-`ContentManifest` pipeline as cards, so compiler errors and hashes cover all three authoring surfaces.
+
+### 2026-06-17 - Round P9R3
+
+- Phase: Phase 9 - Editor, Simulation, And Balance Tools
+- Deliverable: added reward pool draft editing with card ID choices, positive weights, reward-pool duplication/new flows, manifest summary counts, and compiler-backed missing-card and schema errors.
+- Files changed: `apps/editor/src/App.tsx`, `apps/editor/src/card-editor-model.ts`, `apps/editor/src/card-editor-model.test.ts`, `apps/editor/src/styles.css`, and this progress log.
+- Validation: `corepack pnpm test apps/editor/src/card-editor-model.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/editor build`, Playwright editor smoke on `http://127.0.0.1:5175` for reward-pool creation, missing-card repair, invalid-weight repair, clean console, and 390px mobile overflow, Phase 9 architecture searches for browser-safe compiler imports and pure package dependency leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed.
+- Commit: pending.
+- Notes: Reward pools now validate against current draft cards through the shared compiler instead of duplicating reference checks in the UI.

@@ -9,16 +9,20 @@ import {
   createDraftEffect,
   createDraftEnemy,
   createDraftRelic,
+  createDraftRewardPool,
   createInitialDraftContent,
   duplicateDraftCard,
   duplicateDraftEnemy,
   duplicateDraftRelic,
+  duplicateDraftRewardPool,
   type DraftCard,
   type DraftCardEffect,
   type DraftEffectKind,
   type DraftEditorContent,
   type DraftEnemy,
   type DraftRelic,
+  type DraftRewardChoice,
+  type DraftRewardPool,
   type EditorEntityKind,
 } from "./card-editor-model.js";
 
@@ -28,6 +32,7 @@ const ENTITY_LABELS: Record<EditorEntityKind, string> = {
   cards: "Cards",
   relics: "Relics",
   enemies: "Enemies",
+  rewardPools: "Rewards",
 };
 
 export function App() {
@@ -37,6 +42,7 @@ export function App() {
     cards: content.cards[0]?.id ?? "",
     relics: content.relics[0]?.id ?? "",
     enemies: content.enemies[0]?.id ?? "",
+    rewardPools: content.rewardPools[0]?.id ?? "",
   }));
   const preview = useMemo(() => compileEditorContent(content), [content]);
   const selectedCard =
@@ -45,6 +51,9 @@ export function App() {
     content.relics.find((relic) => relic.id === selection.relics) ?? content.relics[0];
   const selectedEnemy =
     content.enemies.find((enemy) => enemy.id === selection.enemies) ?? content.enemies[0];
+  const selectedRewardPool =
+    content.rewardPools.find((rewardPool) => rewardPool.id === selection.rewardPools) ??
+    content.rewardPools[0];
   const activeItems = getActiveItems(content, activeKind);
   const canonicalJson = preview.result.ok
     ? preview.result.canonicalJson
@@ -108,6 +117,23 @@ export function App() {
     }
   }
 
+  function updateSelectedRewardPool(patch: Partial<DraftRewardPool>): void {
+    if (!selectedRewardPool) {
+      return;
+    }
+
+    setContent((currentContent) => ({
+      ...currentContent,
+      rewardPools: currentContent.rewardPools.map((rewardPool) =>
+        rewardPool.id === selectedRewardPool.id ? { ...rewardPool, ...patch } : rewardPool,
+      ),
+    }));
+
+    if (patch.id) {
+      setSelectedId("rewardPools", patch.id);
+    }
+  }
+
   function addActiveEntity(): void {
     if (activeKind === "cards") {
       const card = createDraftCard(content.cards.length + 1);
@@ -126,6 +152,19 @@ export function App() {
         relics: [...currentContent.relics, relic],
       }));
       setSelectedId("relics", relic.id);
+      return;
+    }
+
+    if (activeKind === "rewardPools") {
+      const rewardPool = createDraftRewardPool(
+        content.rewardPools.length + 1,
+        content.cards[0]?.id,
+      );
+      setContent((currentContent) => ({
+        ...currentContent,
+        rewardPools: [...currentContent.rewardPools, rewardPool],
+      }));
+      setSelectedId("rewardPools", rewardPool.id);
       return;
     }
 
@@ -165,6 +204,19 @@ export function App() {
         enemies: [...currentContent.enemies, enemy],
       }));
       setSelectedId("enemies", enemy.id);
+      return;
+    }
+
+    if (activeKind === "rewardPools" && selectedRewardPool) {
+      const rewardPool = duplicateDraftRewardPool(
+        selectedRewardPool,
+        content.rewardPools.length + 1,
+      );
+      setContent((currentContent) => ({
+        ...currentContent,
+        rewardPools: [...currentContent.rewardPools, rewardPool],
+      }));
+      setSelectedId("rewardPools", rewardPool.id);
     }
   }
 
@@ -183,7 +235,7 @@ export function App() {
           </span>
           <span className="status-pill">
             {content.cards.length} cards / {content.relics.length} relics / {content.enemies.length}{" "}
-            enemies
+            enemies / {content.rewardPools.length} rewards
           </span>
           <span className="status-pill">
             {preview.result.ok
@@ -228,7 +280,7 @@ export function App() {
                 type="button"
                 onClick={() => setSelectedId(activeKind, item.id)}
               >
-                <strong>{item.name || "(unnamed)"}</strong>
+                <strong>{getEntityName(activeKind, item) || "(unnamed)"}</strong>
                 <span>{item.id || "(missing id)"}</span>
                 <span>{getEntityMeta(activeKind, item)}</span>
               </button>
@@ -258,6 +310,13 @@ export function App() {
           {activeKind === "enemies" && selectedEnemy ? (
             <EnemyForm enemy={selectedEnemy} onChange={updateSelectedEnemy} />
           ) : null}
+          {activeKind === "rewardPools" && selectedRewardPool ? (
+            <RewardPoolForm
+              rewardPool={selectedRewardPool}
+              cards={content.cards}
+              onChange={updateSelectedRewardPool}
+            />
+          ) : null}
         </section>
 
         <aside className="editor-panel validation-panel" aria-label="Validation">
@@ -285,6 +344,10 @@ export function App() {
               <div>
                 <dt>Enemies</dt>
                 <dd>{preview.result.manifest.enemies.length}</dd>
+              </div>
+              <div>
+                <dt>Rewards</dt>
+                <dd>{preview.result.manifest.rewardPools.length}</dd>
               </div>
             </dl>
           ) : (
@@ -462,6 +525,108 @@ function EnemyForm(props: {
   );
 }
 
+function RewardPoolForm(props: {
+  readonly rewardPool: DraftRewardPool;
+  readonly cards: readonly DraftCard[];
+  readonly onChange: (patch: Partial<DraftRewardPool>) => void;
+}) {
+  return (
+    <div className="editor-form">
+      <label className="wide-field">
+        <span>ID</span>
+        <input
+          value={props.rewardPool.id}
+          onChange={(event) => props.onChange({ id: event.target.value })}
+        />
+      </label>
+      <RewardChoiceEditor
+        choices={props.rewardPool.choices}
+        cardIds={props.cards.map((card) => card.id)}
+        onChange={(choices) => props.onChange({ choices })}
+      />
+    </div>
+  );
+}
+
+function RewardChoiceEditor(props: {
+  readonly choices: readonly DraftRewardChoice[];
+  readonly cardIds: readonly string[];
+  readonly onChange: (choices: readonly DraftRewardChoice[]) => void;
+}) {
+  function updateChoice(index: number, patch: Partial<DraftRewardChoice>): void {
+    props.onChange(
+      props.choices.map((choice, choiceIndex) =>
+        choiceIndex === index ? { ...choice, ...patch } : choice,
+      ),
+    );
+  }
+
+  function addChoice(): void {
+    props.onChange([
+      ...props.choices,
+      {
+        cardId: props.cardIds[0] ?? "",
+        weightText: "1",
+      },
+    ]);
+  }
+
+  function removeChoice(index: number): void {
+    if (props.choices.length <= 1) {
+      return;
+    }
+
+    props.onChange(props.choices.filter((_, choiceIndex) => choiceIndex !== index));
+  }
+
+  return (
+    <section className="effect-editor" aria-label="Choices">
+      <div className="panel-heading">
+        <h3>Choices</h3>
+        <button className="ghost-button compact-button" type="button" onClick={addChoice}>
+          Add
+        </button>
+      </div>
+      <datalist id="reward-card-ids">
+        {props.cardIds.map((cardId) => (
+          <option key={cardId} value={cardId} />
+        ))}
+      </datalist>
+      <div className="effect-list">
+        {props.choices.map((choice, index) => (
+          <div className="choice-row" key={`${choice.cardId}-${index}`}>
+            <label>
+              <span>Card ID</span>
+              <input
+                list="reward-card-ids"
+                value={choice.cardId}
+                onChange={(event) => updateChoice(index, { cardId: event.target.value })}
+              />
+            </label>
+            <label>
+              <span>Weight</span>
+              <input
+                inputMode="numeric"
+                value={choice.weightText}
+                onChange={(event) => updateChoice(index, { weightText: event.target.value })}
+              />
+            </label>
+            <button
+              className="ghost-button compact-button"
+              type="button"
+              onClick={() => removeChoice(index)}
+              disabled={props.choices.length <= 1}
+              aria-label={`Remove reward choice ${index + 1}`}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function EffectEditor(props: {
   readonly label: string;
   readonly effects: readonly DraftCardEffect[];
@@ -572,10 +737,17 @@ function getActiveItems(content: DraftEditorContent, kind: EditorEntityKind) {
     return content.relics;
   }
 
-  return content.enemies;
+  if (kind === "enemies") {
+    return content.enemies;
+  }
+
+  return content.rewardPools;
 }
 
-function getEntityMeta(kind: EditorEntityKind, item: DraftCard | DraftRelic | DraftEnemy): string {
+function getEntityMeta(
+  kind: EditorEntityKind,
+  item: DraftCard | DraftRelic | DraftEnemy | DraftRewardPool,
+): string {
   if (kind === "cards") {
     const card = item as DraftCard;
     return `${card.costText || "-"} cost - ${card.targetPolicy}`;
@@ -586,8 +758,24 @@ function getEntityMeta(kind: EditorEntityKind, item: DraftCard | DraftRelic | Dr
     return `${relic.effects.length} effects`;
   }
 
+  if (kind === "rewardPools") {
+    const rewardPool = item as DraftRewardPool;
+    return `${rewardPool.choices.length} choices`;
+  }
+
   const enemy = item as DraftEnemy;
   return `${enemy.hpText || "-"} HP - ${enemy.intents.length} intents`;
+}
+
+function getEntityName(
+  kind: EditorEntityKind,
+  item: DraftCard | DraftRelic | DraftEnemy | DraftRewardPool,
+): string {
+  if (kind === "rewardPools") {
+    return (item as DraftRewardPool).id;
+  }
+
+  return (item as DraftCard | DraftRelic | DraftEnemy).name;
 }
 
 function singularLabel(kind: EditorEntityKind): string {
@@ -597,6 +785,10 @@ function singularLabel(kind: EditorEntityKind): string {
 
   if (kind === "relics") {
     return "Relic";
+  }
+
+  if (kind === "rewardPools") {
+    return "Reward Pool";
   }
 
   return "Enemy";

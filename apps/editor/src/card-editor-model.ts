@@ -3,7 +3,7 @@ import type { ContentManifest } from "@ucre/content-schema";
 
 export type CardTargetPolicy = ContentManifest["cards"][number]["targetPolicy"];
 export type DraftEffectKind = "DamageDealt" | "BlockGained" | "ResourceChanged";
-export type EditorEntityKind = "cards" | "relics" | "enemies";
+export type EditorEntityKind = "cards" | "relics" | "enemies" | "rewardPools";
 
 export interface DraftCardEffect {
   readonly id: string;
@@ -37,10 +37,21 @@ export interface DraftEnemy {
   readonly intents: readonly DraftCardEffect[];
 }
 
+export interface DraftRewardChoice {
+  readonly cardId: string;
+  readonly weightText: string;
+}
+
+export interface DraftRewardPool {
+  readonly id: string;
+  readonly choices: readonly DraftRewardChoice[];
+}
+
 export interface DraftEditorContent {
   readonly cards: readonly DraftCard[];
   readonly relics: readonly DraftRelic[];
   readonly enemies: readonly DraftEnemy[];
+  readonly rewardPools: readonly DraftRewardPool[];
 }
 
 export interface CardEditorCompilePreview {
@@ -62,13 +73,19 @@ export const DRAFT_EFFECT_KINDS: readonly DraftEffectKind[] = [
   "ResourceChanged",
 ];
 
-export const EDITOR_ENTITY_KINDS: readonly EditorEntityKind[] = ["cards", "relics", "enemies"];
+export const EDITOR_ENTITY_KINDS: readonly EditorEntityKind[] = [
+  "cards",
+  "relics",
+  "enemies",
+  "rewardPools",
+];
 
 export function createInitialDraftContent(): DraftEditorContent {
   return {
     cards: createInitialDraftCards(),
     relics: createInitialDraftRelics(),
     enemies: createInitialDraftEnemies(),
+    rewardPools: createInitialDraftRewardPools(),
   };
 }
 
@@ -142,6 +159,24 @@ export function createInitialDraftEnemies(): readonly DraftEnemy[] {
   ];
 }
 
+export function createInitialDraftRewardPools(): readonly DraftRewardPool[] {
+  return [
+    {
+      id: "starterRewards",
+      choices: [
+        {
+          cardId: "sparkStrike",
+          weightText: "2",
+        },
+        {
+          cardId: "guardPulse",
+          weightText: "1",
+        },
+      ],
+    },
+  ];
+}
+
 export function createDraftCard(sequence: number): DraftCard {
   return {
     id: `draftCard${sequence}`,
@@ -192,6 +227,21 @@ export function createDraftEnemy(sequence: number): DraftEnemy {
   };
 }
 
+export function createDraftRewardPool(
+  sequence: number,
+  defaultCardId = "sparkStrike",
+): DraftRewardPool {
+  return {
+    id: `draftRewards${sequence}`,
+    choices: [
+      {
+        cardId: defaultCardId,
+        weightText: "1",
+      },
+    ],
+  };
+}
+
 export function duplicateDraftCard(card: DraftCard, sequence: number): DraftCard {
   return {
     ...card,
@@ -219,6 +269,17 @@ export function duplicateDraftEnemy(enemy: DraftEnemy, sequence: number): DraftE
   };
 }
 
+export function duplicateDraftRewardPool(
+  rewardPool: DraftRewardPool,
+  sequence: number,
+): DraftRewardPool {
+  return {
+    ...rewardPool,
+    id: `${rewardPool.id}Copy${sequence}`,
+    choices: rewardPool.choices.map((choice) => ({ ...choice })),
+  };
+}
+
 export function createDraftEffect(sequence: number, type: DraftEffectKind = "DamageDealt") {
   return {
     id: `effect${sequence}`,
@@ -232,6 +293,7 @@ export function compileCardEditorDrafts(cards: readonly DraftCard[]): CardEditor
     cards,
     relics: [],
     enemies: [],
+    rewardPools: [],
   });
 }
 
@@ -323,7 +385,13 @@ export function buildEditorManifest(
         payload: {},
       },
     ],
-    rewardPools: [],
+    rewardPools: content.rewardPools.map((rewardPool) => ({
+      id: rewardPool.id.trim(),
+      choices: rewardPool.choices.map((choice) => ({
+        cardId: choice.cardId.trim(),
+        weight: parseInteger(choice.weightText),
+      })),
+    })),
   };
 }
 
@@ -335,6 +403,7 @@ function normalizeEditorContent(
       cards: input as readonly DraftCard[],
       relics: [],
       enemies: [],
+      rewardPools: [],
     };
   }
 

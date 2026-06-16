@@ -82,6 +82,9 @@ describe("card editor model", () => {
     expect(preview.result.manifest.cards).toHaveLength(2);
     expect(preview.result.manifest.relics.map((relic) => relic.id)).toEqual(["emberAnchor"]);
     expect(preview.result.manifest.enemies.map((enemy) => enemy.id)).toEqual(["trainingWarden"]);
+    expect(preview.result.manifest.rewardPools.map((rewardPool) => rewardPool.id)).toEqual([
+      "starterRewards",
+    ]);
     expect(preview.result.manifestHash).toMatch(/^ucre1-/);
   });
 
@@ -129,5 +132,81 @@ describe("card editor model", () => {
     expect(manifest.enemies[0]?.intents[0]?.payload).toEqual({
       amount: 9,
     });
+  });
+
+  it("keeps reward pool choices compiler-visible", () => {
+    const content = createInitialDraftContent();
+    const manifest = buildEditorManifest(content);
+
+    expect(manifest.rewardPools[0]?.choices).toEqual([
+      {
+        cardId: "sparkStrike",
+        weight: 2,
+      },
+      {
+        cardId: "guardPulse",
+        weight: 1,
+      },
+    ]);
+  });
+
+  it("surfaces missing reward cards through the shared compiler", () => {
+    const content = createInitialDraftContent();
+    const [rewardPool] = content.rewardPools;
+    if (!rewardPool) {
+      throw new Error("Default editor reward pool is missing.");
+    }
+
+    const preview = compileEditorContent({
+      ...content,
+      rewardPools: [
+        {
+          ...rewardPool,
+          choices: [
+            {
+              cardId: "missingCard",
+              weightText: "1",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(preview.result.ok).toBe(false);
+    if (preview.result.ok) {
+      throw new Error("Invalid reward pool unexpectedly compiled.");
+    }
+
+    expect(preview.result.errors.map((error) => error.code)).toEqual(["CARD_NOT_FOUND"]);
+  });
+
+  it("surfaces invalid reward weights through the shared schema", () => {
+    const content = createInitialDraftContent();
+    const [rewardPool] = content.rewardPools;
+    if (!rewardPool) {
+      throw new Error("Default editor reward pool is missing.");
+    }
+
+    const preview = compileEditorContent({
+      ...content,
+      rewardPools: [
+        {
+          ...rewardPool,
+          choices: [
+            {
+              cardId: "sparkStrike",
+              weightText: "0",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(preview.result.ok).toBe(false);
+    if (preview.result.ok) {
+      throw new Error("Invalid reward weight unexpectedly compiled.");
+    }
+
+    expect(preview.result.errors.map((error) => error.code)).toEqual(["SCHEMA_INVALID"]);
   });
 });
