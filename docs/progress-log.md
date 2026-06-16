@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 8 - Ruleset Pressure Tests
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add sacrifice-board topology and slots.
+- Next recommended round: add sacrifice-board sacrifice costs and lane combat.
 
 ## Round Template
 
@@ -451,5 +451,15 @@ Notes:
 - Files changed: `packages/rulesets/fixtures/blackjack-like-stand-replay.json`, `packages/rulesets/src/blackjack-like-replay.test.ts`, and this progress log.
 - Validation: `corepack pnpm test packages/rulesets/src/blackjack-like-replay.test.ts`, `corepack pnpm --filter @ucre/rulesets build`, Phase 8 architecture searches for nondeterminism, browser/presentation imports, and blackjack leakage outside rulesets, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after formatting the new replay test.
-- Commit: pending.
+- Commit: `1004637 test(rulesets): add blackjack replay fixture`
 - Notes: Blackjack-like now has its first replay/hash contract beside the Slay-like golden replay, proving the second active ruleset runs through the shared replay model.
+
+### 2026-06-17 - Round P8R4
+
+- Phase: Phase 8 - Ruleset Pressure Tests
+- Deliverable: scaffolded the sacrifice-board ruleset topology with player/opponent lane slots, opposing/adjacent lane metadata, deck/hand/discard/sacrifice zones, opponent zones, and starting blood/bones/scale resources.
+- Files changed: `packages/rulesets/src/sacrifice-board.ts`, `packages/rulesets/src/sacrifice-board.test.ts`, `packages/rulesets/src/index.ts`, `docs/adr/0036-sacrifice-board-topology.md`, and this progress log.
+- Validation: `corepack pnpm test packages/rulesets/src/sacrifice-board.test.ts`, `corepack pnpm --filter @ucre/rulesets build`, Phase 8 architecture searches for nondeterminism, browser/presentation imports, and premature sacrifice-board leakage into core/replay/run/content packages, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after formatting the new scaffold file.
+- Commit: pending.
+- Notes: Sacrifice-board now proves the shared core can model lane slots as board zones without introducing a new core board primitive before duplication is visible.
