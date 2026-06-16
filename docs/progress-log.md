@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 9 - Editor, Simulation, And Balance Tools
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add balance metrics output.
+- Next recommended round: add balance dashboard MVP.
 
 ## Round Template
 
@@ -531,5 +531,15 @@ Notes:
 - Files changed: `packages/sim/*`, `package.json`, `tsconfig.packages.json`, `scripts/check-architecture.mjs`, `pnpm-lock.yaml`, `docs/adr/0041-simulation-cli-package.md`, and this progress log.
 - Validation: `corepack pnpm test packages/sim/src/index.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/sim build`, `node packages\sim\dist\cli.js --runs 3 --seed-prefix smoke`, `corepack pnpm sim:slay -- --runs 2 --seed-prefix script`, Phase 9 architecture searches for nondeterminism, browser/storage/presentation leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after making the CLI tolerate pnpm's standalone `--` separator and removing an unused test parameter caught by lint.
-- Commit: pending.
+- Commit: `84bcdaa feat(sim): add slay simulation cli`
 - Notes: The CLI defaults to 1,000 deterministic runs and currently uses a fixed Slay-like scripted policy; richer balance metrics are planned for the next round.
+
+### 2026-06-17 - Round P9R6
+
+- Phase: Phase 9 - Editor, Simulation, And Balance Tools
+- Deliverable: extended the `@ucre/sim` Slay-like JSON output with deterministic aggregate balance metrics for win/completion/failure rates, average turn/command/event counts, card play and pick rates, resource curves, and death node distribution.
+- Files changed: `packages/sim/src/index.ts`, `packages/sim/src/index.test.ts`, `docs/adr/0042-simulation-metrics-contract.md`, and this progress log.
+- Validation: `corepack pnpm test packages/sim/src/index.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/sim build`, `corepack pnpm sim:slay -- --runs 3 --seed-prefix metrics-smoke`, Phase 9 architecture searches for nondeterminism, browser/storage/presentation leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after replacing `Array.prototype.findLast` with an explicit reverse scan for the repository TypeScript target.
+- Commit: pending.
+- Notes: The metrics block now gives the planned dashboard a stable machine-readable contract without pulling UI, storage, or presentation dependencies into simulation.
