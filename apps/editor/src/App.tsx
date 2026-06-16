@@ -1,5 +1,11 @@
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useMemo, useState, type CSSProperties, type ChangeEvent } from "react";
 
+import {
+  createSampleSimulationResultJson,
+  parseBalanceDashboardInput,
+  type BalanceDashboardViewModel,
+  type BalanceResourceCurve,
+} from "./balance-dashboard-model.js";
 import {
   CARD_TARGET_POLICIES,
   DRAFT_EFFECT_KINDS,
@@ -26,7 +32,13 @@ import {
   type EditorEntityKind,
 } from "./card-editor-model.js";
 
+type WorkspaceView = "content" | "balance";
 type SelectionState = Record<EditorEntityKind, string>;
+
+const WORKSPACE_LABELS: Record<WorkspaceView, string> = {
+  content: "Content",
+  balance: "Balance",
+};
 
 const ENTITY_LABELS: Record<EditorEntityKind, string> = {
   cards: "Cards",
@@ -37,6 +49,7 @@ const ENTITY_LABELS: Record<EditorEntityKind, string> = {
 
 export function App() {
   const [content, setContent] = useState<DraftEditorContent>(() => createInitialDraftContent());
+  const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceView>("content");
   const [activeKind, setActiveKind] = useState<EditorEntityKind>("cards");
   const [selection, setSelection] = useState<SelectionState>(() => ({
     cards: content.cards[0]?.id ?? "",
@@ -245,128 +258,371 @@ export function App() {
         </div>
       </header>
 
-      <nav className="entity-tabs" aria-label="Content type">
-        {EDITOR_ENTITY_KINDS.map((kind) => (
+      <nav className="workspace-tabs" aria-label="Editor workspace">
+        {(Object.keys(WORKSPACE_LABELS) as WorkspaceView[]).map((view) => (
           <button
-            className={kind === activeKind ? "entity-tab entity-tab-active" : "entity-tab"}
-            key={kind}
+            className={
+              view === activeWorkspace ? "workspace-tab workspace-tab-active" : "workspace-tab"
+            }
+            key={view}
             type="button"
-            onClick={() => setActiveKind(kind)}
+            onClick={() => setActiveWorkspace(view)}
           >
-            {ENTITY_LABELS[kind]}
+            {WORKSPACE_LABELS[view]}
           </button>
         ))}
       </nav>
 
-      <section className="editor-layout" aria-label="Editor workspace">
-        <aside className="editor-panel card-list-panel" aria-label={ENTITY_LABELS[activeKind]}>
-          <div className="panel-heading">
-            <h2>{ENTITY_LABELS[activeKind]}</h2>
-            <button
-              className="primary-button compact-button"
-              type="button"
-              onClick={addActiveEntity}
-            >
-              New
-            </button>
-          </div>
-          <div className="card-list">
-            {activeItems.map((item) => (
+      {activeWorkspace === "content" ? (
+        <>
+          <nav className="entity-tabs" aria-label="Content type">
+            {EDITOR_ENTITY_KINDS.map((kind) => (
               <button
-                className={
-                  item.id === selection[activeKind] ? "card-row card-row-selected" : "card-row"
-                }
-                key={item.id}
+                className={kind === activeKind ? "entity-tab entity-tab-active" : "entity-tab"}
+                key={kind}
                 type="button"
-                onClick={() => setSelectedId(activeKind, item.id)}
+                onClick={() => setActiveKind(kind)}
               >
-                <strong>{getEntityName(activeKind, item) || "(unnamed)"}</strong>
-                <span>{item.id || "(missing id)"}</span>
-                <span>{getEntityMeta(activeKind, item)}</span>
+                {ENTITY_LABELS[kind]}
               </button>
             ))}
-          </div>
-        </aside>
+          </nav>
 
-        <section className="editor-panel card-form-panel" aria-label="Details">
-          <div className="panel-heading">
-            <h2>{singularLabel(activeKind)}</h2>
-            <button
-              className="ghost-button compact-button"
-              type="button"
-              onClick={duplicateActiveEntity}
-              disabled={activeItems.length === 0}
-            >
-              Duplicate
-            </button>
-          </div>
+          <section className="editor-layout" aria-label="Editor workspace">
+            <aside className="editor-panel card-list-panel" aria-label={ENTITY_LABELS[activeKind]}>
+              <div className="panel-heading">
+                <h2>{ENTITY_LABELS[activeKind]}</h2>
+                <button
+                  className="primary-button compact-button"
+                  type="button"
+                  onClick={addActiveEntity}
+                >
+                  New
+                </button>
+              </div>
+              <div className="card-list">
+                {activeItems.map((item) => (
+                  <button
+                    className={
+                      item.id === selection[activeKind] ? "card-row card-row-selected" : "card-row"
+                    }
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedId(activeKind, item.id)}
+                  >
+                    <strong>{getEntityName(activeKind, item) || "(unnamed)"}</strong>
+                    <span>{item.id || "(missing id)"}</span>
+                    <span>{getEntityMeta(activeKind, item)}</span>
+                  </button>
+                ))}
+              </div>
+            </aside>
 
-          {activeKind === "cards" && selectedCard ? (
-            <CardForm card={selectedCard} onChange={updateSelectedCard} />
-          ) : null}
-          {activeKind === "relics" && selectedRelic ? (
-            <RelicForm relic={selectedRelic} onChange={updateSelectedRelic} />
-          ) : null}
-          {activeKind === "enemies" && selectedEnemy ? (
-            <EnemyForm enemy={selectedEnemy} onChange={updateSelectedEnemy} />
-          ) : null}
-          {activeKind === "rewardPools" && selectedRewardPool ? (
-            <RewardPoolForm
-              rewardPool={selectedRewardPool}
-              cards={content.cards}
-              onChange={updateSelectedRewardPool}
-            />
-          ) : null}
-        </section>
+            <section className="editor-panel card-form-panel" aria-label="Details">
+              <div className="panel-heading">
+                <h2>{singularLabel(activeKind)}</h2>
+                <button
+                  className="ghost-button compact-button"
+                  type="button"
+                  onClick={duplicateActiveEntity}
+                  disabled={activeItems.length === 0}
+                >
+                  Duplicate
+                </button>
+              </div>
 
-        <aside className="editor-panel validation-panel" aria-label="Validation">
-          <div className="panel-heading">
-            <h2>Manifest</h2>
-            <span className={preview.result.ok ? "preview-ok" : "preview-blocked"}>
-              {preview.result.ok ? "OK" : "Errors"}
-            </span>
-          </div>
+              {activeKind === "cards" && selectedCard ? (
+                <CardForm card={selectedCard} onChange={updateSelectedCard} />
+              ) : null}
+              {activeKind === "relics" && selectedRelic ? (
+                <RelicForm relic={selectedRelic} onChange={updateSelectedRelic} />
+              ) : null}
+              {activeKind === "enemies" && selectedEnemy ? (
+                <EnemyForm enemy={selectedEnemy} onChange={updateSelectedEnemy} />
+              ) : null}
+              {activeKind === "rewardPools" && selectedRewardPool ? (
+                <RewardPoolForm
+                  rewardPool={selectedRewardPool}
+                  cards={content.cards}
+                  onChange={updateSelectedRewardPool}
+                />
+              ) : null}
+            </section>
 
-          {preview.result.ok ? (
-            <dl className="manifest-summary">
-              <div>
-                <dt>Hash</dt>
-                <dd>{preview.result.manifestHash}</dd>
+            <aside className="editor-panel validation-panel" aria-label="Validation">
+              <div className="panel-heading">
+                <h2>Manifest</h2>
+                <span className={preview.result.ok ? "preview-ok" : "preview-blocked"}>
+                  {preview.result.ok ? "OK" : "Errors"}
+                </span>
               </div>
-              <div>
-                <dt>Cards</dt>
-                <dd>{preview.result.manifest.cards.length}</dd>
-              </div>
-              <div>
-                <dt>Relics</dt>
-                <dd>{preview.result.manifest.relics.length}</dd>
-              </div>
-              <div>
-                <dt>Enemies</dt>
-                <dd>{preview.result.manifest.enemies.length}</dd>
-              </div>
-              <div>
-                <dt>Rewards</dt>
-                <dd>{preview.result.manifest.rewardPools.length}</dd>
-              </div>
-            </dl>
-          ) : (
-            <ul className="error-list">
-              {preview.result.errors.map((error) => (
-                <li key={`${error.code}-${error.path}-${error.message}`}>
-                  <strong>{error.code}</strong>
-                  <span>{error.path || "(root)"}</span>
-                  <p>{error.message}</p>
-                </li>
-              ))}
-            </ul>
-          )}
 
-          <textarea readOnly value={canonicalJson} aria-label="Canonical manifest preview" />
-        </aside>
-      </section>
+              {preview.result.ok ? (
+                <dl className="manifest-summary">
+                  <div>
+                    <dt>Hash</dt>
+                    <dd>{preview.result.manifestHash}</dd>
+                  </div>
+                  <div>
+                    <dt>Cards</dt>
+                    <dd>{preview.result.manifest.cards.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Relics</dt>
+                    <dd>{preview.result.manifest.relics.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Enemies</dt>
+                    <dd>{preview.result.manifest.enemies.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Rewards</dt>
+                    <dd>{preview.result.manifest.rewardPools.length}</dd>
+                  </div>
+                </dl>
+              ) : (
+                <ul className="error-list">
+                  {preview.result.errors.map((error) => (
+                    <li key={`${error.code}-${error.path}-${error.message}`}>
+                      <strong>{error.code}</strong>
+                      <span>{error.path || "(root)"}</span>
+                      <p>{error.message}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <textarea readOnly value={canonicalJson} aria-label="Canonical manifest preview" />
+            </aside>
+          </section>
+        </>
+      ) : (
+        <BalanceDashboard />
+      )}
     </main>
   );
+}
+
+function BalanceDashboard() {
+  const [jsonText, setJsonText] = useState(() => createSampleSimulationResultJson());
+  const parseResult = useMemo(() => parseBalanceDashboardInput(jsonText), [jsonText]);
+
+  return (
+    <section className="balance-layout" aria-label="Balance dashboard">
+      <aside className="editor-panel balance-input-panel" aria-label="Simulation input">
+        <div className="panel-heading">
+          <h2>Simulation JSON</h2>
+          <button
+            className="ghost-button compact-button"
+            type="button"
+            onClick={() => setJsonText(createSampleSimulationResultJson())}
+          >
+            Reset
+          </button>
+        </div>
+        <textarea
+          className="balance-json-input"
+          value={jsonText}
+          onChange={(event) => setJsonText(event.target.value)}
+          aria-label="Simulation JSON input"
+        />
+      </aside>
+
+      <section className="editor-panel balance-dashboard-panel" aria-label="Balance metrics">
+        <div className="panel-heading">
+          <h2>Balance</h2>
+          <span className={parseResult.ok ? "preview-ok" : "preview-blocked"}>
+            {parseResult.ok ? "Ready" : "Invalid"}
+          </span>
+        </div>
+
+        {parseResult.ok ? (
+          <BalanceDashboardMetrics dashboard={parseResult.dashboard} />
+        ) : (
+          <ul className="error-list">
+            {parseResult.errors.map((error) => (
+              <li key={error}>
+                <strong>Input</strong>
+                <span>Simulation JSON</span>
+                <p>{error}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </section>
+  );
+}
+
+function BalanceDashboardMetrics(props: { readonly dashboard: BalanceDashboardViewModel }) {
+  const dashboard = props.dashboard;
+
+  return (
+    <div className="balance-dashboard">
+      <dl className="balance-metric-grid">
+        <MetricTile label="Win Rate" value={formatPercent(dashboard.winRate)} tone="good" />
+        <MetricTile
+          label="Runs"
+          value={dashboard.runCount.toString()}
+          meta={dashboard.seedPrefix}
+        />
+        <MetricTile
+          label="Avg Turns"
+          value={formatMetricNumber(dashboard.averageTurnCount)}
+          meta={`${dashboard.completedCount} complete / ${dashboard.failedCount} failed`}
+        />
+        <MetricTile
+          label="Avg Events"
+          value={formatMetricNumber(dashboard.averageEventCount)}
+          meta={`${formatMetricNumber(dashboard.averageCommandCount)} commands`}
+        />
+      </dl>
+
+      <section className="balance-section" aria-label="Card rates">
+        <div className="panel-heading">
+          <h3>Card Rates</h3>
+          <span className="inline-hash">{dashboard.contentManifestHash}</span>
+        </div>
+        <div className="balance-rate-grid">
+          <RateList
+            label="Play"
+            rows={dashboard.cardPlayRates.map((rate) => ({
+              id: rate.definitionId,
+              primary: `${formatMetricNumber(rate.playsPerRun)} / run`,
+              secondary: `${rate.playCount} plays`,
+              rate: rate.playRate,
+            }))}
+          />
+          <RateList
+            label="Pick"
+            rows={dashboard.cardPickRates.map((rate) => ({
+              id: rate.definitionId,
+              primary: formatPercent(rate.pickRate),
+              secondary: `${rate.pickCount} picks`,
+              rate: rate.pickRate,
+            }))}
+          />
+        </div>
+      </section>
+
+      <section className="balance-section" aria-label="Resource curves">
+        <div className="panel-heading">
+          <h3>Resource Curves</h3>
+          <span className="inline-hash">{dashboard.rulesetId}</span>
+        </div>
+        <div className="resource-curve-grid">
+          {dashboard.resourceCurves.map((curve) => (
+            <ResourceCurvePanel curve={curve} key={`${curve.playerId}-${curve.resourceId}`} />
+          ))}
+        </div>
+      </section>
+
+      <section className="balance-section" aria-label="Death node distribution">
+        <div className="panel-heading">
+          <h3>Death Nodes</h3>
+          <span className="inline-hash">{dashboard.rulesVersion}</span>
+        </div>
+        {dashboard.deathNodeDistribution.length > 0 ? (
+          <RateList
+            label="Deaths"
+            rows={dashboard.deathNodeDistribution.map((bucket) => ({
+              id: bucket.nodeId,
+              primary: formatPercent(bucket.rate),
+              secondary: `${bucket.count} runs`,
+              rate: bucket.rate,
+            }))}
+          />
+        ) : (
+          <p className="empty-state">No death nodes in this simulation set.</p>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function MetricTile(props: {
+  readonly label: string;
+  readonly value: string;
+  readonly meta?: string;
+  readonly tone?: "good";
+}) {
+  return (
+    <div className={props.tone === "good" ? "metric-tile metric-tile-good" : "metric-tile"}>
+      <dt>{props.label}</dt>
+      <dd>{props.value}</dd>
+      {props.meta ? <span>{props.meta}</span> : null}
+    </div>
+  );
+}
+
+function RateList(props: {
+  readonly label: string;
+  readonly rows: readonly {
+    readonly id: string;
+    readonly primary: string;
+    readonly secondary: string;
+    readonly rate: number;
+  }[];
+}) {
+  return (
+    <section className="rate-list" aria-label={`${props.label} rates`}>
+      <h4>{props.label}</h4>
+      {props.rows.map((row) => (
+        <div className="rate-row" key={row.id}>
+          <div>
+            <strong>{row.id}</strong>
+            <span>{row.secondary}</span>
+          </div>
+          <span>{row.primary}</span>
+          <div className="rate-bar" aria-hidden="true">
+            <span style={{ width: `${clampPercent(row.rate * 100)}%` }} />
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function ResourceCurvePanel(props: { readonly curve: BalanceResourceCurve }) {
+  const maxValue = Math.max(1, ...props.curve.points.map((point) => point.averageValue));
+
+  return (
+    <section className="resource-curve" aria-label={props.curve.resourceId}>
+      <h4>
+        {props.curve.resourceId}
+        <span>{props.curve.playerId}</span>
+      </h4>
+      <div className="curve-point-list">
+        {props.curve.points.map((point) => (
+          <div className="curve-point" key={`${point.step}-${point.averageValue}`}>
+            <span>Step {point.step}</span>
+            <div className="curve-track" aria-hidden="true">
+              <span
+                style={
+                  {
+                    width: `${clampPercent((point.averageValue / maxValue) * 100)}%`,
+                  } as CSSProperties
+                }
+              />
+            </div>
+            <strong>{formatMetricNumber(point.averageValue)}</strong>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function formatPercent(value: number): string {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function formatMetricNumber(value: number): string {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+}
+
+function clampPercent(value: number): number {
+  return Math.max(0, Math.min(100, value));
 }
 
 function CardForm(props: {

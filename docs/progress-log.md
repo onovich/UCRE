@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 9 - Editor, Simulation, And Balance Tools
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add balance dashboard MVP.
+- Next recommended round: add static balance checks and ruleset metadata editing.
 
 ## Round Template
 
@@ -541,5 +541,15 @@ Notes:
 - Files changed: `packages/sim/src/index.ts`, `packages/sim/src/index.test.ts`, `docs/adr/0042-simulation-metrics-contract.md`, and this progress log.
 - Validation: `corepack pnpm test packages/sim/src/index.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/sim build`, `corepack pnpm sim:slay -- --runs 3 --seed-prefix metrics-smoke`, Phase 9 architecture searches for nondeterminism, browser/storage/presentation leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after replacing `Array.prototype.findLast` with an explicit reverse scan for the repository TypeScript target.
-- Commit: pending.
+- Commit: `116d745 feat(sim): add balance metrics`
 - Notes: The metrics block now gives the planned dashboard a stable machine-readable contract without pulling UI, storage, or presentation dependencies into simulation.
+
+### 2026-06-17 - Round P9R7
+
+- Phase: Phase 9 - Editor, Simulation, And Balance Tools
+- Deliverable: added a Balance workspace to the editor that parses `sim:slay` JSON, shows win rate, average run metrics, card play and pick rates, resource curves, and death node distribution with a resettable sample payload and invalid-input state.
+- Files changed: `apps/editor/src/App.tsx`, `apps/editor/src/styles.css`, `apps/editor/src/balance-dashboard-model.ts`, `apps/editor/src/balance-dashboard-model.test.ts`, and this progress log.
+- Validation: `corepack pnpm test apps/editor/src/balance-dashboard-model.test.ts apps/editor/src/card-editor-model.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/editor build`, Playwright editor smoke on `http://127.0.0.1:5175` for Balance view metrics, invalid JSON state, clean console, and 390px mobile overflow, Phase 9 architecture searches for browser-safe dashboard imports, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed.
+- Commit: pending.
+- Notes: The dashboard consumes the stable metrics contract without importing `@ucre/sim`, rulesets, replay, storage, or presentation dependencies into the editor runtime.
