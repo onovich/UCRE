@@ -17,6 +17,9 @@
       "path": "./packages/presentation-core"
     },
     {
+      "path": "./packages/presentation-gsap"
+    },
+    {
       "path": "./packages/theater-three"
     },
     {

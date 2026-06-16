@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 6 - Presentation Director
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add GSAP timeline adapter scaffold.
+- Next recommended round: add event-to-beat devtools view.
 
 ## Round Template
 
@@ -321,5 +321,15 @@ Notes:
 - Files changed: `packages/presentation-core/src/index.ts`, `packages/presentation-core/src/index.test.ts`, `docs/adr/0026-renderer-neutral-beat-profiles.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/presentation-core/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/presentation-core build`, full project validation, and architecture boundary searches confirming profiles add no DOM, renderer, frame timing, random, or direct state mutation paths.
 - Result: passed.
-- Commit: pending.
+- Commit: `ab51baa feat(presentation): add beat profiles`
 - Notes: Profiles are derived from immutable core `PresentationIntent` payloads and do not introduce renderer dependencies.
+
+### 2026-06-17 - Round P6R3
+
+- Phase: Phase 6 - Presentation Director
+- Deliverable: added a dedicated `@ucre/presentation-gsap` adapter package with GSAP timeline creation from beat schedules, deterministic labels, default tweens, kind-specific handler overrides, skip, and playback-rate helpers.
+- Files changed: `packages/presentation-gsap/*`, `tsconfig.packages.json`, `pnpm-lock.yaml`, `docs/adr/0027-gsap-timeline-adapter-package.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/presentation-gsap/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/presentation-gsap build`, full project validation, and architecture boundary searches confirming GSAP imports are isolated to `@ucre/presentation-gsap`.
+- Result: passed after removing an unnecessary direct `@ucre/core` import from the adapter tests.
+- Commit: pending.
+- Notes: GSAP is isolated to the adapter package; presentation-core remains pure scheduler/data code.
