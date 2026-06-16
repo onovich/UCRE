@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 6 - Presentation Director
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add presentation beat contracts and scheduler scaffold.
+- Next recommended round: add renderer-neutral move/damage/destroy beat profiles.
 
 ## Round Template
 
@@ -301,5 +301,15 @@ Notes:
 - Files changed: `packages/theater-three/src/index.ts`, `packages/theater-three/src/index.test.ts`, `docs/adr/0024-theater-card-texture-generation.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/theater-three/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/theater-three build`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, browser Draw/Skip and Strike/Skip canvas-hash smoke with textured cards, headless console smoke, mobile 390px texture/layout overflow check, Chrome headless screenshot pixel smoke with non-background canvas-center ratio `0.2609`, full project validation, and architecture boundary searches with canvas generation isolated to `@ucre/theater-three`.
 - Result: passed.
-- Commit: pending.
+- Commit: `f786d5f feat(theater): generate card textures`
 - Notes: Phase 5 exit gate is locally satisfied: cards visually move between rule-correct anchors, skip snaps to the final state, textured card faces render in the Three.js canvas, and screenshot smoke remains nonblank.
+
+### 2026-06-17 - Round P6R1
+
+- Phase: Phase 6 - Presentation Director
+- Deliverable: added presentation beat contracts, deterministic beat schedule creation, presentation director snapshots, skip/playback-rate helpers, and tests proving associated state hashes are preserved by presentation controls.
+- Files changed: `packages/presentation-core/src/index.ts`, `packages/presentation-core/src/index.test.ts`, `packages/presentation-core/package.json`, `packages/presentation-core/tsconfig.json`, `pnpm-lock.yaml`, `docs/adr/0025-presentation-beat-scheduler-contracts.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/presentation-core/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/presentation-core build`, `corepack pnpm --filter @ucre/theater-three build`, full project validation, and architecture boundary searches confirming presentation-core has no DOM, renderer, frame timing, random, or direct state mutation paths.
+- Result: passed after running `corepack pnpm install` to refresh local workspace symlinks for the new `@ucre/core` dependency.
+- Commit: pending.
+- Notes: Phase 6 starts with pure presentation data and scheduler contracts; no renderer, DOM, GSAP, or rule mutation path is introduced.

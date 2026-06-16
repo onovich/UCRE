@@ -113,7 +113,11 @@ importers:
 
   packages/core: {}
 
-  packages/presentation-core: {}
+  packages/presentation-core:
+    dependencies:
+      '@ucre/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/replay:
     dependencies:
