@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 3 - Content Schema And Compiler
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add content compiler cross-reference validation and canonical manifest output.
+- Next recommended round: add manifest hash generation and a content lint command.
 
 ## Round Template
 
@@ -191,5 +191,15 @@ Notes:
 - Files changed: `packages/content-schema/package.json`, `packages/content-schema/src/index.ts`, `packages/content-schema/src/index.test.ts`, `pnpm-lock.yaml`, `docs/adr/0015-content-authoring-schemas.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/content-schema/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across core, replay, rulesets, content schema, and content compiler packages.
 - Result: passed.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `9e15c9b feat(content): add authoring schemas`
 - Notes: Schema validation normalizes optional arrays/payloads and rejects malformed scalar values or unknown authoring keys before compiler cross-reference checks.
+
+### 2026-06-17 - Round P3R2
+
+- Phase: Phase 3 - Content Schema And Compiler
+- Deliverable: added content compiler parsing, cross-reference validation, deterministic canonical manifest JSON, and compiler tests for invalid references/fallbacks.
+- Files changed: `packages/content-compiler/src/index.ts`, `packages/content-compiler/src/index.test.ts`, `docs/adr/0016-content-compiler-validation.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/content-compiler/src packages/content-schema/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across core, replay, rulesets, content schema, and content compiler packages.
+- Result: passed.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: Compiler validation now rejects duplicate IDs, missing reward cards, missing resource/zone references, missing explicit presentation profiles, and missing fallback profiles before runtime.
