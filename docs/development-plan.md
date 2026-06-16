@@ -56,6 +56,7 @@ packages/
   content-schema/   # Zod schemas and generated types
   content-compiler/ # authoring data -> runtime bundle
   replay/           # command log, event log, state/event hashes
+  run/              # RunState, map graph, node traversal, save contracts
   simulation/       # bots, balance runs, automated smoke simulation
   presentation-core/# intents, beats, scheduling contracts
   theater-three/    # CardActor, ZoneAnchor, camera, VFX bindings

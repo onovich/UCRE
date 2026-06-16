@@ -153,6 +153,12 @@ importers:
         specifier: workspace:*
         version: link:../replay
 
+  packages/run:
+    dependencies:
+      '@ucre/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/theater-three:
     dependencies:
       '@ucre/presentation-core':

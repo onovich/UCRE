@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 7 - Roguelike Run Loop
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add RunState and map graph.
+- Next recommended round: add node resolver and encounter nodes.
 
 ## Round Template
 
@@ -351,5 +351,15 @@ Notes:
 - Files changed: `packages/presentation-core/src/index.ts`, `packages/presentation-core/src/index.test.ts`, `apps/game/src/App.tsx`, `docs/adr/0028-presentation-profile-random-boundary.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/presentation-core/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/presentation-core build`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, system Chrome browser smoke for presentation beat panel loading, full project validation, and architecture boundary searches confirming presentation-core has no DOM, renderer, frame timing, ambient random, GSAP, or direct state mutation paths.
 - Result: passed.
-- Commit: pending.
+- Commit: `99cca59 feat(presentation): add profile random boundary`
 - Notes: Phase 6 exit gate is locally satisfied: presentation beats can be scheduled, skipped, accelerated, inspected by event source, animated through the GSAP adapter, profiled for core presentation categories, and given presentation-only random streams without changing rule hashes.
+
+### 2026-06-17 - Round P7R1
+
+- Phase: Phase 7 - Roguelike Run Loop
+- Deliverable: added the pure `@ucre/run` package with RunState contracts, deterministic linear map graph creation, available-node progression, and stable run hashing.
+- Files changed: `packages/run/*`, `tsconfig.packages.json`, `scripts/check-architecture.mjs`, `docs/adr/0029-run-state-package-boundary.md`, `docs/development-plan.md`, `pnpm-lock.yaml`, and this progress log.
+- Validation: `corepack pnpm test -- packages/run/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/run build`, full project validation, and architecture boundary searches confirming run remains free of DOM, React, Three.js, GSAP, Dexie, browser storage, frame timing, ambient random, and presentation dependencies.
+- Result: passed.
+- Commit: pending.
+- Notes: Phase 7 starts with a reusable run/map layer outside encounter rulesets and before browser persistence.
