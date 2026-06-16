@@ -99,6 +99,7 @@ describe("content compiler", () => {
       throw new Error("compileContentManifest unexpectedly failed.");
     }
 
+    expect(result.manifestHash).toMatch(/^ucre1-/);
     const canonical = JSON.parse(result.canonicalJson) as {
       readonly cards: readonly { readonly id: string }[];
       readonly rewardPools: readonly { readonly choices: readonly { readonly cardId: string }[] }[];
@@ -110,6 +111,51 @@ describe("content compiler", () => {
       "defend",
       "strike",
     ]);
+  });
+
+  it("produces the same manifest hash for semantically equivalent ordering", () => {
+    const first = compileContentManifest({
+      manifestId: "orderedManifest",
+      rulesetId: "slay-like",
+      version: "1.0.0",
+      cards: [
+        {
+          id: "strike",
+          name: "Strike",
+          cost: 1,
+        },
+        {
+          id: "defend",
+          name: "Defend",
+          cost: 1,
+        },
+      ],
+    });
+    const second = compileContentManifest({
+      version: "1.0.0",
+      rulesetId: "slay-like",
+      manifestId: "orderedManifest",
+      cards: [
+        {
+          cost: 1,
+          name: "Defend",
+          id: "defend",
+        },
+        {
+          cost: 1,
+          name: "Strike",
+          id: "strike",
+        },
+      ],
+    });
+
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    if (!first.ok || !second.ok) {
+      throw new Error("compileContentManifest unexpectedly failed.");
+    }
+
+    expect(first.manifestHash).toBe(second.manifestHash);
   });
 
   it("rejects duplicate ids and missing reward cards", () => {

@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 3 - Content Schema And Compiler
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add manifest hash generation and a content lint command.
+- Next recommended round: add YAML/JSON5 authoring examples and loader support.
 
 ## Round Template
 
@@ -201,5 +201,15 @@ Notes:
 - Files changed: `packages/content-compiler/src/index.ts`, `packages/content-compiler/src/index.test.ts`, `docs/adr/0016-content-compiler-validation.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/content-compiler/src packages/content-schema/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across core, replay, rulesets, content schema, and content compiler packages.
 - Result: passed.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `f36780a feat(content): add compiler validation`
 - Notes: Compiler validation now rejects duplicate IDs, missing reward cards, missing resource/zone references, missing explicit presentation profiles, and missing fallback profiles before runtime.
+
+### 2026-06-17 - Round P3R3
+
+- Phase: Phase 3 - Content Schema And Compiler
+- Deliverable: added stable manifest hash generation, content compiler CLI entry point, workspace `content:lint` command, and a valid JSON manifest lint fixture.
+- Files changed: `package.json`, `packages/content-compiler/package.json`, `packages/content-compiler/tsconfig.json`, `packages/content-compiler/src/index.ts`, `packages/content-compiler/src/index.test.ts`, `packages/content-compiler/src/cli.ts`, `packages/content-compiler/fixtures/slay-like-valid-manifest.json`, `pnpm-lock.yaml`, `docs/adr/0017-content-manifest-hash-lint.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/content-compiler/src packages/content-schema/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `corepack pnpm --filter @ucre/content-compiler build`, `corepack pnpm content:lint packages/content-compiler/fixtures/slay-like-valid-manifest.json`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across core, replay, rulesets, content schema, and content compiler packages.
+- Result: passed.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: Manifest hashes are computed from canonicalized content via core `stableHash`, so equivalent authoring order produces the same manifest identity.

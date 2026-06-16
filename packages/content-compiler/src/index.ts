@@ -4,6 +4,7 @@ import {
   type ContentEffect,
   type ContentManifest,
 } from "@ucre/content-schema";
+import { stableHash, type StableHash } from "@ucre/core";
 
 export interface ContentCompilerIdentity {
   schemaPackageId: typeof UCRE_CONTENT_SCHEMA_PACKAGE_ID;
@@ -20,6 +21,7 @@ export type ContentCompileResult =
       readonly ok: true;
       readonly manifest: ContentManifest;
       readonly canonicalJson: string;
+      readonly manifestHash: StableHash;
     }
   | {
       readonly ok: false;
@@ -62,6 +64,7 @@ export function compileContentManifest(input: unknown): ContentCompileResult {
     ok: true,
     manifest: parsed.data,
     canonicalJson: stringifyCanonicalContentManifest(parsed.data),
+    manifestHash: hashContentManifest(parsed.data),
   };
 }
 
@@ -155,6 +158,10 @@ export function validateContentManifest(manifest: ContentManifest): readonly Con
 
 export function stringifyCanonicalContentManifest(manifest: ContentManifest): string {
   return `${JSON.stringify(canonicalizeContentManifest(manifest), null, 2)}\n`;
+}
+
+export function hashContentManifest(manifest: ContentManifest): StableHash {
+  return stableHash(canonicalizeContentManifest(manifest));
 }
 
 export function canonicalizeContentManifest(manifest: ContentManifest): ContentManifest {

@@ -86,6 +86,9 @@ importers:
       '@ucre/content-schema':
         specifier: workspace:*
         version: link:../content-schema
+      '@ucre/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/content-schema:
     dependencies:

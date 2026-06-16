@@ -1,0 +1,76 @@
+{
+  "manifestId": "slayLikeExample",
+  "rulesetId": "slay-like",
+  "version": "1.0.0",
+  "resources": [
+    {
+      "id": "energy",
+      "name": "Energy",
+      "initialValue": 3,
+      "minValue": 0
+    }
+  ],
+  "zones": [
+    {
+      "id": "drawPile",
+      "kind": "deck",
+      "owner": "player"
+    },
+    {
+      "id": "hand",
+      "kind": "hand",
+      "owner": "player"
+    }
+  ],
+  "cards": [
+    {
+      "id": "strike",
+      "name": "Strike",
+      "cost": 1,
+      "targetPolicy": "enemy",
+      "effects": [
+        {
+          "id": "strikeDamage",
+          "type": "DamageDealt",
+          "payload": {
+            "amount": 6
+          }
+        }
+      ]
+    }
+  ],
+  "enemies": [
+    {
+      "id": "jawWorm",
+      "name": "Jaw Worm",
+      "hp": 12,
+      "intents": [
+        {
+          "id": "jawWormBite",
+          "type": "DamageDealt",
+          "payload": {
+            "amount": 6
+          }
+        }
+      ]
+    }
+  ],
+  "presentationProfiles": [
+    {
+      "id": "damageFallback",
+      "eventType": "DamageDealt",
+      "beatType": "damage",
+      "fallback": true
+    }
+  ],
+  "rewardPools": [
+    {
+      "id": "basicRewards",
+      "choices": [
+        {
+          "cardId": "strike"
+        }
+      ]
+    }
+  ]
+}

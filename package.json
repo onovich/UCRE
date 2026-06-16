@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "corepack pnpm -r --if-present build",
+    "content:lint": "node packages/content-compiler/dist/cli.js",
     "docs:check": "node scripts/check-docs.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
