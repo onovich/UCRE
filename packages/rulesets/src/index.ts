@@ -9,3 +9,5 @@ export function createRulesetsPackageIdentity(): RulesetsPackageIdentity {
     corePackageId: UCRE_CORE_PACKAGE_ID,
   };
 }
+
+export * from "./slay-like.js";

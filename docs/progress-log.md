@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 2 - First Ruleset Vertical Slice
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: create the minimal Slay-like ruleset scaffold with phases, zones, resources, and starter command handlers.
+- Next recommended round: add Slay-like starter card definitions, enemy definitions, and play-card command legality.
 
 ## Round Template
 
@@ -111,5 +111,15 @@ Notes:
 - Files changed: `packages/replay/src/index.ts`, `packages/replay/src/index.test.ts`, `packages/replay/fixtures/golden-basic-replay.json`, `docs/adr/0007-replay-runner-hashes.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/replay/src packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and Phase 1 forbidden dependency/nondeterminism searches across `packages/core` and `packages/replay`.
 - Result: passed.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `2fd6872 feat(replay): add golden replay runner`
 - Notes: Phase 1 exit gate is locally satisfied: deterministic command logs reproduce final state hash and event hash through a golden replay.
+
+### 2026-06-17 - Round P2R1
+
+- Phase: Phase 2 - First Ruleset Vertical Slice
+- Deliverable: scaffolded the Slay-like ruleset with phase names, zone IDs, resource IDs, encounter initialization, starter deck objects, and a draw command registry backed by the core pipeline.
+- Files changed: `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, `packages/rulesets/src/index.ts`, `docs/adr/0008-slay-like-ruleset-scaffold.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/rulesets/src packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across `packages/core` and `packages/rulesets`.
+- Result: passed after fixing a narrow TypeScript state inference issue and formatting `packages/rulesets/src/slay-like.ts`.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: Slay-like ruleset state is initialized without UI/presentation dependencies and draws through core `DrawCards`.
