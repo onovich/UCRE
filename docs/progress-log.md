@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 9 - Editor, Simulation, And Balance Tools
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add card editor MVP.
+- Next recommended round: add relic and enemy editor MVP.
 
 ## Round Template
 
@@ -481,5 +481,15 @@ Notes:
 - Files changed: `packages/rulesets/src/sacrifice-board.ts`, `packages/rulesets/src/sacrifice-board.test.ts`, `packages/rulesets/fixtures/sacrifice-board-scale-replay.json`, `packages/rulesets/src/sacrifice-board-replay.test.ts`, `docs/adr/0038-sacrifice-board-scale-replay.md`, and this progress log.
 - Validation: `corepack pnpm test packages/rulesets/src/sacrifice-board.test.ts packages/rulesets/src/sacrifice-board-replay.test.ts`, `corepack pnpm --filter @ucre/rulesets build`, Phase 8 architecture searches for nondeterminism, browser/presentation imports, and sacrifice-board leakage outside rulesets, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed.
-- Commit: pending.
+- Commit: `c4b4387 test(rulesets): add sacrifice board replay`
 - Notes: Phase 8 exit gate is locally satisfied: Slay-like, blackjack-like, and sacrifice-board all run on the shared core command/effect/event/objective/replay model and each has at least one golden replay.
+
+### 2026-06-17 - Round P9R1
+
+- Phase: Phase 9 - Editor, Simulation, And Balance Tools
+- Deliverable: added a browser card editor MVP that creates draft cards, edits cost/target/tags/effects, compiles through the shared content compiler, and displays manifest hash, canonical JSON, or compiler errors.
+- Files changed: `apps/editor/*`, `packages/content-compiler/src/*`, `packages/content-compiler/package.json`, `pnpm-lock.yaml`, `docs/adr/0039-editor-card-browser-compiler.md`, and this progress log.
+- Validation: `corepack pnpm --filter @ucre/content-compiler build`, `corepack pnpm test apps/editor/src/card-editor-model.test.ts packages/content-compiler/src/index.test.ts`, `corepack pnpm --filter @ucre/editor build`, `corepack pnpm lint`, `corepack pnpm typecheck`, Playwright editor smoke on `http://127.0.0.1:5175` for new-card creation, schema-error repair, clean console, and 390px mobile overflow, Phase 9 architecture searches for browser-safe compiler imports and pure package dependency leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after formatting the new editor files and adding an inline editor favicon to remove browser 404 noise.
+- Commit: pending.
+- Notes: The compiler now exposes `@ucre/content-compiler/browser` for React tools while Node file loading stays on the main compiler entry.

@@ -47,6 +47,12 @@ importers:
 
   apps/editor:
     dependencies:
+      '@ucre/content-compiler':
+        specifier: workspace:*
+        version: link:../../packages/content-compiler
+      '@ucre/content-schema':
+        specifier: workspace:*
+        version: link:../../packages/content-schema
       react:
         specifier: ^19.1.0
         version: 19.2.7
