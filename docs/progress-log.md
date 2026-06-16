@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 5 - Three.js Card Theater Vertical Slice
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add card actor identities and zone-anchor synchronization.
+- Next recommended round: add draw and discard movement animation with skip/snap support.
 
 ## Round Template
 
@@ -271,5 +271,15 @@ Notes:
 - Files changed: `packages/theater-three/package.json`, `packages/theater-three/tsconfig.json`, `packages/theater-three/src/index.ts`, `packages/theater-three/src/index.test.ts`, `apps/game/package.json`, `apps/game/src/App.tsx`, `apps/game/src/TheaterCanvas.tsx`, `apps/game/src/styles.css`, `pnpm-lock.yaml`, `docs/adr/0021-three-card-theater-scene.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/theater-three/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/theater-three build`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, browser canvas DOM smoke, Chrome headless screenshot pixel smoke with non-background canvas-center ratio `0.2609`, mobile 390px canvas/layout overflow check, browser console check, full project validation, and forbidden dependency/nondeterminism searches.
 - Result: passed.
-- Commit: pending.
+- Commit: `fd5490c feat(theater): add three scene shell`
 - Notes: Three.js remains isolated to `@ucre/theater-three` and the game app; core, rulesets, replay, and content packages stay free of presentation dependencies.
+
+### 2026-06-17 - Round P5R2
+
+- Phase: Phase 5 - Three.js Card Theater Vertical Slice
+- Deliverable: replaced count-only theater input with stable card/enemy/reward actors, added anchor grouping, and mapped Slay-like zones to theater anchors from the game app adapter.
+- Files changed: `packages/theater-three/src/index.ts`, `packages/theater-three/src/index.test.ts`, `apps/game/src/TheaterCanvas.tsx`, `apps/game/index.html`, `docs/adr/0022-theater-actor-anchor-sync.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/theater-three/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/theater-three build`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, browser actor overlay smoke for Draw and Strike, headless browser console smoke, mobile 390px canvas/layout overflow check, Chrome headless screenshot pixel smoke with non-background canvas-center ratio `0.2609`, full project validation, and architecture boundary searches.
+- Result: passed.
+- Commit: pending.
+- Notes: Theater actors preserve object IDs and labels for later movement diffing while keeping Three.js and theater contracts out of deterministic packages.

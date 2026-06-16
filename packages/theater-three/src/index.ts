@@ -22,13 +22,19 @@ export interface TheaterAnchor {
   readonly position: readonly [number, number, number];
 }
 
+export type TheaterActorKind = "card" | "enemy" | "reward";
+
+export interface TheaterActor {
+  readonly id: string;
+  readonly label: string;
+  readonly anchorId: TheaterAnchorId;
+  readonly kind: TheaterActorKind;
+}
+
+export type TheaterActorGroups = Readonly<Record<TheaterAnchorId, readonly TheaterActor[]>>;
+
 export interface TheaterRenderInput {
-  readonly drawPileCount: number;
-  readonly handCount: number;
-  readonly playAreaCount: number;
-  readonly discardPileCount: number;
-  readonly enemyCount: number;
-  readonly rewardCount: number;
+  readonly actors: readonly TheaterActor[];
 }
 
 export interface CardTheater {
@@ -81,6 +87,23 @@ export function createTheaterAnchorLayout(): readonly TheaterAnchor[] {
       position: [3.1, 0, -1.75],
     },
   ];
+}
+
+export function groupTheaterActorsByAnchor(actors: readonly TheaterActor[]): TheaterActorGroups {
+  const groups: Record<TheaterAnchorId, TheaterActor[]> = {
+    [THEATER_ANCHOR_IDS.drawPile]: [],
+    [THEATER_ANCHOR_IDS.hand]: [],
+    [THEATER_ANCHOR_IDS.playArea]: [],
+    [THEATER_ANCHOR_IDS.discardPile]: [],
+    [THEATER_ANCHOR_IDS.enemy]: [],
+    [THEATER_ANCHOR_IDS.reward]: [],
+  };
+
+  for (const actor of actors) {
+    groups[actor.anchorId].push(actor);
+  }
+
+  return groups;
 }
 
 export function createCardTheater(canvas: HTMLCanvasElement): CardTheater {
@@ -155,19 +178,14 @@ export function createCardTheater(canvas: HTMLCanvasElement): CardTheater {
       render();
     },
     update(input) {
+      const groups = groupTheaterActorsByAnchor(input.actors);
       clearGroup(cardGroup);
-      addZoneCards(cardGroup, anchors, THEATER_ANCHOR_IDS.drawPile, input.drawPileCount, 0xd5c26a);
-      addZoneCards(cardGroup, anchors, THEATER_ANCHOR_IDS.hand, input.handCount, 0xf1eee6);
-      addZoneCards(cardGroup, anchors, THEATER_ANCHOR_IDS.playArea, input.playAreaCount, 0x7fb79b);
-      addZoneCards(
-        cardGroup,
-        anchors,
-        THEATER_ANCHOR_IDS.discardPile,
-        input.discardPileCount,
-        0x9c8e78,
-      );
-      addZoneCards(cardGroup, anchors, THEATER_ANCHOR_IDS.enemy, input.enemyCount, 0xd67d63);
-      addZoneCards(cardGroup, anchors, THEATER_ANCHOR_IDS.reward, input.rewardCount, 0x5fc19e);
+      addZoneActors(cardGroup, anchors, THEATER_ANCHOR_IDS.drawPile, groups.drawPile);
+      addZoneActors(cardGroup, anchors, THEATER_ANCHOR_IDS.hand, groups.hand);
+      addZoneActors(cardGroup, anchors, THEATER_ANCHOR_IDS.playArea, groups.playArea);
+      addZoneActors(cardGroup, anchors, THEATER_ANCHOR_IDS.discardPile, groups.discardPile);
+      addZoneActors(cardGroup, anchors, THEATER_ANCHOR_IDS.enemy, groups.enemy);
+      addZoneActors(cardGroup, anchors, THEATER_ANCHOR_IDS.reward, groups.reward);
       render();
     },
     render,
@@ -178,28 +196,40 @@ export function createCardTheater(canvas: HTMLCanvasElement): CardTheater {
   };
 }
 
-function addZoneCards(
+function addZoneActors(
   group: THREE.Group,
   anchors: readonly TheaterAnchor[],
   anchorId: TheaterAnchorId,
-  count: number,
-  color: number,
+  actors: readonly TheaterActor[],
 ): void {
   const anchor = anchors.find((entry) => entry.id === anchorId);
   if (!anchor) {
     return;
   }
 
+  const count = actors.length;
   for (let index = 0; index < count; index += 1) {
+    const actor = actors[index];
+    if (!actor) {
+      continue;
+    }
+
     const mesh = new THREE.Mesh(
       new THREE.PlaneGeometry(CARD_WIDTH, CARD_HEIGHT),
       new THREE.MeshStandardMaterial({
-        color,
+        color: getActorColor(actor),
         roughness: 0.72,
         metalness: 0.02,
         side: THREE.DoubleSide,
       }),
     );
+    mesh.name = actor.id;
+    mesh.userData = {
+      actorId: actor.id,
+      anchorId: actor.anchorId,
+      kind: actor.kind,
+      label: actor.label,
+    };
     const [x, , z] = anchor.position;
     const centeredIndex = index - (count - 1) / 2;
     const handOffset = anchorId === THEATER_ANCHOR_IDS.hand ? centeredIndex * 0.52 : 0;
@@ -210,6 +240,34 @@ function addZoneCards(
     mesh.rotation.z = anchorId === THEATER_ANCHOR_IDS.hand ? centeredIndex * -0.14 : 0;
     group.add(mesh);
   }
+}
+
+function getActorColor(actor: TheaterActor): number {
+  if (actor.kind === "enemy") {
+    return 0xd67d63;
+  }
+
+  if (actor.kind === "reward") {
+    return 0x5fc19e;
+  }
+
+  if (actor.anchorId === THEATER_ANCHOR_IDS.drawPile) {
+    return 0xd5c26a;
+  }
+
+  if (actor.anchorId === THEATER_ANCHOR_IDS.hand) {
+    return 0xf1eee6;
+  }
+
+  if (actor.anchorId === THEATER_ANCHOR_IDS.playArea) {
+    return 0x7fb79b;
+  }
+
+  if (actor.anchorId === THEATER_ANCHOR_IDS.discardPile) {
+    return 0x9c8e78;
+  }
+
+  return 0xf1eee6;
 }
 
 function clearGroup(group: THREE.Group): void {
