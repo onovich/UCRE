@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 4 - Game Shell And Devtools
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add legal command/target preview and a state diff panel.
+- Next recommended round: expand trigger queue and RNG inspectors into a dedicated diagnostics panel.
 
 ## Round Template
 
@@ -241,5 +241,15 @@ Notes:
 - Files changed: `apps/game/package.json`, `apps/game/src/App.tsx`, `apps/game/src/styles.css`, `.codex/project-ops-workflow.json`, `docs/codex-ops-workflow.md`, `pnpm-lock.yaml`, `docs/adr/0020-game-shell-command-boundary.md`, and this progress log.
 - Validation: `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/game build`, `corepack pnpm --filter @ucre/sandbox build`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\StartDevServer.cmd`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Smoke.cmd`, browser smoke for Draw -> Strike -> Strike -> choose Iron Wave, mobile 390px overflow check, browser console check, direct UI state mutation audit, full project validation, and forbidden dependency/nondeterminism searches.
 - Result: passed.
-- Commit: pending.
+- Commit: `9d584a2 feat(game): add command dispatch shell`
 - Notes: The app renders default Slay-like state and all gameplay changes flow through `executeSlayLikeCommand`; the dev-server wrapper now runs the game shell at `http://127.0.0.1:5173`.
+
+### 2026-06-17 - Round P4R2
+
+- Phase: Phase 4 - Game Shell And Devtools
+- Deliverable: added command legality previews, selected target previews, and a latest-command state diff panel to the React game shell.
+- Files changed: `apps/game/src/App.tsx`, `apps/game/src/styles.css`, and this progress log.
+- Validation: `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, browser smoke for preview -> Draw -> Strike -> End Turn, mobile 390px overflow check, browser console check, direct UI state mutation audit, full project validation, and forbidden dependency/nondeterminism searches.
+- Result: passed.
+- Commit: pending.
+- Notes: Preview uses the same Slay-like command helper against the current immutable state and only displays the simulated result; committed UI state still changes only from dispatched command results.

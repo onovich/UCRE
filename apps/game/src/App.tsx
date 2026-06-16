@@ -26,7 +26,24 @@ interface TimelineEntry {
   readonly id: string;
   readonly label: string;
   readonly events: readonly RuleEvent[];
+  readonly diffs: readonly StateDiff[];
   readonly error?: string;
+}
+
+interface StateDiff {
+  readonly label: string;
+  readonly before: string;
+  readonly after: string;
+}
+
+interface CommandPreview {
+  readonly id: string;
+  readonly label: string;
+  readonly ok: boolean;
+  readonly eventTypes: readonly string[];
+  readonly diffs: readonly StateDiff[];
+  readonly targetLabel?: string;
+  readonly errors?: readonly string[];
 }
 
 function createInitialShellState(): GameState {
@@ -39,6 +56,7 @@ function createInitialShellState(): GameState {
 export function App({ appName = "UCRE Game" }: AppProps) {
   const [state, setState] = useState(createInitialShellState);
   const [timeline, setTimeline] = useState<readonly TimelineEntry[]>([]);
+  const [selectedTargetId, setSelectedTargetId] = useState<string | undefined>();
 
   const playerResources = state.resources[PLAYER_ID]?.values ?? {};
   const hand = getZoneObjects(state, SLAY_LIKE_ZONES.hand);
@@ -48,7 +66,13 @@ export function App({ appName = "UCRE Game" }: AppProps) {
   const rewards = getZoneObjects(state, SLAY_LIKE_ZONES.reward);
   const enemies = getZoneObjects(state, SLAY_LIKE_ZONES.enemy);
   const livingEnemies = enemies.filter((enemy) => readNumberAttribute(enemy, "hp") > 0);
-  const selectedEnemy = livingEnemies[0];
+  const selectedEnemy =
+    livingEnemies.find((enemy) => enemy.id === selectedTargetId) ?? livingEnemies[0];
+  const commandPreviews = useMemo(
+    () => createCommandPreviews(state, selectedEnemy),
+    [selectedEnemy, state],
+  );
+  const latestDiffs = timeline[0]?.diffs ?? [];
   const stateSummary = useMemo(() => stringifyStateSummary(state), [state]);
 
   function dispatchCommand(label: string, type: string, payload: JsonObject) {
@@ -62,6 +86,7 @@ export function App({ appName = "UCRE Game" }: AppProps) {
       state,
       command,
     });
+    const diffs = result.ok ? summarizeStateDiff(state, result.state) : [];
 
     if (result.ok) {
       setState(result.state);
@@ -73,6 +98,7 @@ export function App({ appName = "UCRE Game" }: AppProps) {
           id: command.id,
           label,
           events: result.events,
+          diffs,
           ...(result.ok
             ? {}
             : {
@@ -87,6 +113,7 @@ export function App({ appName = "UCRE Game" }: AppProps) {
   function resetEncounter() {
     setState(createInitialShellState());
     setTimeline([]);
+    setSelectedTargetId(undefined);
   }
 
   function drawCards() {
@@ -181,6 +208,14 @@ export function App({ appName = "UCRE Game" }: AppProps) {
                   <Metric label="Block" value={readNumberAttribute(enemy, "block")} />
                   <Metric label="Intent" value={readNumberAttribute(enemy, "intentDamage")} />
                 </div>
+                <button
+                  className="target-button"
+                  type="button"
+                  onClick={() => setSelectedTargetId(enemy.id)}
+                  disabled={readNumberAttribute(enemy, "hp") <= 0}
+                >
+                  {selectedEnemy?.id === enemy.id ? "Targeted" : "Target"}
+                </button>
               </article>
             ))}
             {enemies.length === 0 ? <div className="empty-strip">No active enemies</div> : null}
@@ -210,6 +245,13 @@ export function App({ appName = "UCRE Game" }: AppProps) {
                     {definition?.damage ? ` | ${definition.damage} dmg` : ""}
                     {definition?.block ? ` | ${definition.block} block` : ""}
                   </span>
+                  {definition?.requiresTarget ? (
+                    <span className="target-preview">
+                      {selectedEnemy
+                        ? `Target ${formatDefinitionName(selectedEnemy)}`
+                        : "No target"}
+                    </span>
+                  ) : null}
                 </button>
               );
             })}
@@ -274,6 +316,52 @@ export function App({ appName = "UCRE Game" }: AppProps) {
           </ol>
         </section>
 
+        <section className="preview-panel" aria-label="Command preview">
+          <h2>Command Preview</h2>
+          {commandPreviews.length === 0 ? <p className="quiet-text">No legal commands.</p> : null}
+          <ol className="preview-list">
+            {commandPreviews.map((preview) => (
+              <li key={preview.id}>
+                <div className="preview-heading">
+                  <strong>{preview.label}</strong>
+                  <span className={preview.ok ? "preview-ok" : "preview-blocked"}>
+                    {preview.ok ? "Legal" : "Blocked"}
+                  </span>
+                </div>
+                {preview.targetLabel ? <span>{preview.targetLabel}</span> : null}
+                {preview.errors?.length ? <span>{preview.errors.join(" ")}</span> : null}
+                {preview.eventTypes.length > 0 ? (
+                  <span>{preview.eventTypes.join(" -> ")}</span>
+                ) : null}
+                {preview.diffs[0] ? (
+                  <span>
+                    {preview.diffs[0].label}: {preview.diffs[0].before}
+                    {" -> "}
+                    {preview.diffs[0].after}
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="diff-panel" aria-label="State diff">
+          <h2>State Diff</h2>
+          {latestDiffs.length === 0 ? <p className="quiet-text">No state changes yet.</p> : null}
+          <dl className="diff-list">
+            {latestDiffs.map((diff) => (
+              <div key={diff.label}>
+                <dt>{diff.label}</dt>
+                <dd>
+                  <span>{diff.before}</span>
+                  <span className="diff-arrow">to</span>
+                  <span>{diff.after}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
         <section className="state-panel" aria-label="State summary">
           <h2>State Summary</h2>
           <pre>{stateSummary}</pre>
@@ -281,6 +369,183 @@ export function App({ appName = "UCRE Game" }: AppProps) {
       </section>
     </main>
   );
+}
+
+function createCommandPreviews(
+  state: GameState,
+  selectedEnemy: GameObject | undefined,
+): readonly CommandPreview[] {
+  const previews: CommandPreview[] = [];
+  const drawPile = getZoneObjects(state, SLAY_LIKE_ZONES.drawPile);
+  const hand = getZoneObjects(state, SLAY_LIKE_ZONES.hand);
+  const rewards = getZoneObjects(state, SLAY_LIKE_ZONES.reward);
+
+  if (state.phase === SLAY_LIKE_PHASES.playerTurn) {
+    if (drawPile.length > 0) {
+      previews.push(
+        previewCommand(state, "Draw", {
+          id: "preview-draw",
+          type: SLAY_LIKE_COMMANDS.drawCards,
+          playerId: PLAYER_ID,
+          payload: {
+            count: Math.min(5, drawPile.length),
+          },
+        }),
+      );
+    }
+
+    previews.push(
+      previewCommand(state, "End Turn", {
+        id: "preview-end-turn",
+        type: SLAY_LIKE_COMMANDS.endTurn,
+        playerId: PLAYER_ID,
+        payload: {},
+      }),
+    );
+  }
+
+  for (const card of hand) {
+    const definition = SLAY_LIKE_CARD_DEFINITIONS[card.definitionId];
+    const targetPayload =
+      definition?.requiresTarget && selectedEnemy ? { targetObjectId: selectedEnemy.id } : {};
+
+    previews.push(
+      previewCommand(
+        state,
+        `Play ${definition?.name ?? card.definitionId}`,
+        {
+          id: `preview-play-${card.id}`,
+          type: SLAY_LIKE_COMMANDS.playCard,
+          playerId: PLAYER_ID,
+          payload: {
+            cardId: card.id,
+            ...targetPayload,
+          },
+        },
+        definition?.requiresTarget && selectedEnemy
+          ? `Target ${formatDefinitionName(selectedEnemy)}`
+          : undefined,
+      ),
+    );
+  }
+
+  if (state.phase === SLAY_LIKE_PHASES.reward) {
+    for (const reward of rewards) {
+      previews.push(
+        previewCommand(state, `Choose ${formatDefinitionName(reward)}`, {
+          id: `preview-reward-${reward.id}`,
+          type: SLAY_LIKE_COMMANDS.chooseReward,
+          playerId: PLAYER_ID,
+          payload: {
+            rewardObjectId: reward.id,
+          },
+        }),
+      );
+    }
+  }
+
+  return previews;
+}
+
+function previewCommand(
+  state: GameState,
+  label: string,
+  command: Command,
+  targetLabel?: string,
+): CommandPreview {
+  const result = executeSlayLikeCommand({
+    state,
+    command,
+  });
+
+  return {
+    id: command.id,
+    label,
+    ok: result.ok,
+    eventTypes: result.events.map((event) => event.type),
+    diffs: result.ok ? summarizeStateDiff(state, result.state) : [],
+    ...(targetLabel ? { targetLabel } : {}),
+    ...(result.ok ? {} : { errors: result.errors.map((error) => error.message) }),
+  };
+}
+
+function summarizeStateDiff(before: GameState, after: GameState): readonly StateDiff[] {
+  const diffs: StateDiff[] = [];
+
+  addDiff(diffs, "Phase", before.phase, after.phase);
+  addDiff(diffs, "Turn", before.turn, after.turn);
+  addDiff(
+    diffs,
+    "Resources",
+    before.resources[PLAYER_ID]?.values ?? {},
+    after.resources[PLAYER_ID]?.values ?? {},
+  );
+
+  for (const zoneId of [
+    SLAY_LIKE_ZONES.drawPile,
+    SLAY_LIKE_ZONES.hand,
+    SLAY_LIKE_ZONES.discardPile,
+    SLAY_LIKE_ZONES.exhaustPile,
+    SLAY_LIKE_ZONES.enemy,
+    SLAY_LIKE_ZONES.reward,
+  ]) {
+    addDiff(
+      diffs,
+      `Zone ${zoneId}`,
+      before.zones[zoneId]?.objectIds ?? [],
+      after.zones[zoneId]?.objectIds ?? [],
+    );
+  }
+
+  addDiff(diffs, "Enemy HP", enemyHitPoints(before), enemyHitPoints(after));
+  addDiff(
+    diffs,
+    "Objectives",
+    before.objectives.map((objective) => `${objective.id}:${objective.status}`),
+    after.objectives.map((objective) => `${objective.id}:${objective.status}`),
+  );
+  addDiff(diffs, "Flags", before.flags, after.flags);
+
+  return diffs;
+}
+
+function addDiff(diffs: StateDiff[], label: string, before: unknown, after: unknown): void {
+  const beforeText = formatDiffValue(before);
+  const afterText = formatDiffValue(after);
+
+  if (beforeText === afterText) {
+    return;
+  }
+
+  diffs.push({
+    label,
+    before: beforeText,
+    after: afterText,
+  });
+}
+
+function enemyHitPoints(state: GameState): Readonly<Record<string, number>> {
+  return Object.fromEntries(
+    getZoneObjects(state, SLAY_LIKE_ZONES.enemy).map((enemy) => [
+      enemy.id,
+      readNumberAttribute(enemy, "hp"),
+    ]),
+  );
+}
+
+function formatDiffValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value.join(", ") : "[]";
+  }
+
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Readonly<Record<string, unknown>>);
+    return entries.length > 0
+      ? entries.map(([key, entry]) => `${key}:${String(entry)}`).join(", ")
+      : "{}";
+  }
+
+  return String(value);
 }
 
 function Metric({ label, value }: { readonly label: string; readonly value: number }) {

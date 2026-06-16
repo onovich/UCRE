@@ -99,7 +99,8 @@ button:disabled {
 .primary-button,
 .ghost-button,
 .card-button,
-.reward-button {
+.reward-button,
+.target-button {
   border-radius: 6px;
   cursor: pointer;
   transition:
@@ -111,7 +112,8 @@ button:disabled {
 .primary-button:enabled:hover,
 .ghost-button:enabled:hover,
 .card-button:enabled:hover,
-.reward-button:enabled:hover {
+.reward-button:enabled:hover,
+.target-button:enabled:hover {
   transform: translateY(-1px);
 }
 
@@ -146,6 +148,8 @@ button:disabled {
 .side-panel,
 .log-panel,
 .state-panel,
+.preview-panel,
+.diff-panel,
 .play-surface {
   background: #1f1e19;
   border: 1px solid #39362c;
@@ -154,14 +158,18 @@ button:disabled {
 
 .side-panel,
 .log-panel,
-.state-panel {
+.state-panel,
+.preview-panel,
+.diff-panel {
   padding: 14px;
 }
 
 .side-panel h2,
 .play-surface h2,
 .log-panel h2,
-.state-panel h2 {
+.state-panel h2,
+.preview-panel h2,
+.diff-panel h2 {
   font-size: 1rem;
   margin: 0 0 12px;
 }
@@ -239,6 +247,15 @@ button:disabled {
   color: #b8b0a0;
 }
 
+.target-button {
+  background: #2b271c;
+  border: 1px solid #76653a;
+  color: #f8e8bb;
+  font-weight: 800;
+  min-height: 34px;
+  padding: 7px 10px;
+}
+
 .card-button,
 .reward-button {
   align-content: start;
@@ -266,6 +283,7 @@ button:disabled {
 }
 
 .card-meta,
+.target-preview,
 .reward-button span:last-child {
   color: #c7bea8;
   font-size: 0.82rem;
@@ -309,10 +327,11 @@ button:disabled {
 .lower-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: minmax(280px, 0.85fr) minmax(320px, 1.15fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
-.log-panel ol {
+.log-panel ol,
+.preview-list {
   display: grid;
   gap: 8px;
   list-style: none;
@@ -320,7 +339,8 @@ button:disabled {
   padding: 0;
 }
 
-.log-panel li {
+.log-panel li,
+.preview-list li {
   background: #171611;
   border: 1px solid #333027;
   border-radius: 6px;
@@ -330,12 +350,75 @@ button:disabled {
 }
 
 .log-panel strong,
-.error-text {
+.error-text,
+.preview-list li,
+.diff-list dd {
   overflow-wrap: anywhere;
+}
+
+.preview-heading {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.preview-ok,
+.preview-blocked {
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 4px 8px;
+}
+
+.preview-ok {
+  background: #17312a;
+  color: #9ff1c6;
+}
+
+.preview-blocked {
+  background: #3a1f19;
+  color: #ffb09d;
 }
 
 .error-text {
   color: #ffb09d;
+}
+
+.diff-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.diff-list div {
+  background: #171611;
+  border: 1px solid #333027;
+  border-radius: 6px;
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+}
+
+.diff-list dt {
+  color: #f8e8bb;
+  font-weight: 800;
+}
+
+.diff-list dd {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.diff-list dd span {
+  color: #c7bea8;
+}
+
+.diff-list .diff-arrow {
+  color: #f8e8bb;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .state-panel pre {
