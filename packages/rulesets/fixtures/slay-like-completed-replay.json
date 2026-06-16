@@ -43,8 +43,8 @@
   },
   "expected": {
     "commandHash": "ucre1-61a14fb5",
-    "stateHash": "ucre1-76892c14",
-    "eventHash": "ucre1-91c0ffa2",
-    "replayHash": "ucre1-659eb4a5"
+    "stateHash": "ucre1-4f60131d",
+    "eventHash": "ucre1-c9259a18",
+    "replayHash": "ucre1-66b9a0f4"
   }
 }

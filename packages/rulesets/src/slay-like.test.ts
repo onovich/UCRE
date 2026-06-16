@@ -6,6 +6,7 @@ import {
   SLAY_LIKE_COMMANDS,
   SLAY_LIKE_ENEMY_DEFINITIONS,
   SLAY_LIKE_EVENTS,
+  SLAY_LIKE_OBJECTIVES,
   SLAY_LIKE_PHASES,
   SLAY_LIKE_RELIC_DEFINITIONS,
   SLAY_LIKE_RESOURCES,
@@ -37,6 +38,24 @@ describe("slay-like encounter scaffold", () => {
     expect(state.zones[SLAY_LIKE_ZONES.enemy]?.kind).toBe("enemy");
     expect(state.zones[SLAY_LIKE_ZONES.enemy]?.objectIds).toEqual(["enemy-jaw-worm"]);
     expect(state.objects["enemy-jaw-worm"]?.attributes.hp).toBe(12);
+    expect(state.objectives).toEqual([
+      {
+        id: SLAY_LIKE_OBJECTIVES.defeatEnemies,
+        type: "SlayDefeatEnemies",
+        status: "pending",
+        payload: {
+          enemyZoneId: SLAY_LIKE_ZONES.enemy,
+        },
+      },
+      {
+        id: SLAY_LIKE_OBJECTIVES.surviveEncounter,
+        type: "SlaySurviveEncounter",
+        status: "pending",
+        payload: {
+          playerId: "player-1",
+        },
+      },
+    ]);
   });
 
   it("defines the Phase 2 sample cards, enemies, and starter relic", () => {
@@ -406,6 +425,11 @@ describe("slay-like encounter scaffold", () => {
     expect(chooseReward.events.map((event) => event.type)).toContain(
       SLAY_LIKE_EVENTS.encounterCompleted,
     );
+    expect(chooseReward.state.objectives.map((objective) => objective.status)).toEqual([
+      "succeeded",
+      "succeeded",
+    ]);
+    expect(chooseReward.events.map((event) => event.type)).toContain("ObjectiveSucceeded");
   });
 
   it("rejects choosing rewards before the reward phase", () => {
@@ -431,5 +455,64 @@ describe("slay-like encounter scaffold", () => {
     }
 
     expect(result.errors[0]?.code).toBe("SLAY_NOT_REWARD_PHASE");
+  });
+
+  it("marks the survival objective failed when enemy intent defeats the player", () => {
+    const initial = createSlayLikeEncounter({
+      gameId: "slay-1",
+      seed: "seed-1",
+    });
+    const state = {
+      ...initial,
+      resources: {
+        ...initial.resources,
+        "player-1": {
+          playerId: "player-1",
+          values: {
+            ...initial.resources["player-1"]?.values,
+            [SLAY_LIKE_RESOURCES.playerHp]: 3,
+          },
+        },
+      },
+    };
+    const result = executeSlayLikeCommand({
+      state,
+      command: {
+        id: "command-1",
+        type: SLAY_LIKE_COMMANDS.endTurn,
+        playerId: "player-1",
+        payload: {},
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("End turn command unexpectedly failed.");
+    }
+
+    expect(result.state.phase).toBe(SLAY_LIKE_PHASES.defeat);
+    expect(result.state.resources["player-1"]?.values[SLAY_LIKE_RESOURCES.playerHp]).toBe(0);
+    expect(result.state.objectives).toEqual([
+      {
+        id: SLAY_LIKE_OBJECTIVES.defeatEnemies,
+        type: "SlayDefeatEnemies",
+        status: "pending",
+        payload: {
+          enemyZoneId: SLAY_LIKE_ZONES.enemy,
+        },
+      },
+      {
+        id: SLAY_LIKE_OBJECTIVES.surviveEncounter,
+        type: "SlaySurviveEncounter",
+        status: "failed",
+        payload: {
+          playerId: "player-1",
+        },
+      },
+    ]);
+    expect(result.events.map((event) => event.type)).toContain("ObjectiveFailed");
+    expect(result.events.map((event) => event.type)).not.toContain(
+      SLAY_LIKE_EVENTS.playerTurnStarted,
+    );
   });
 });

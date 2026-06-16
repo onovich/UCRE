@@ -4,9 +4,9 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 ## Current Status
 
-- Current phase: Phase 2 - First Ruleset Vertical Slice
+- Current phase: Phase 3 - Content Schema And Compiler
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add explicit Slay-like objective state and terminal success/failure transitions.
+- Next recommended round: begin Phase 3 by adding validated content schemas for cards, enemies, relics, rewards, and manifests.
 
 ## Round Template
 
@@ -171,5 +171,15 @@ Notes:
 - Files changed: `packages/replay/src/index.ts`, `packages/rulesets/src/slay-like-replay.test.ts`, `packages/rulesets/fixtures/slay-like-completed-replay.json`, `packages/rulesets/package.json`, `packages/rulesets/tsconfig.json`, `pnpm-lock.yaml`, `docs/adr/0013-replay-initial-state-effects.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/rulesets/src packages/replay/src packages/core/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across `packages/core`, `packages/rulesets`, and `packages/replay`.
 - Result: passed after rebuilding stale replay output before locking the Slay-like fixture hashes.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `4b39818 feat(rulesets): add slay like replay fixture`
 - Notes: The fixture replays draw, two Strike commands, and reward choice to reproduce final `complete` state and stable command/state/event/replay hashes.
+
+### 2026-06-17 - Round P2R7
+
+- Phase: Phase 2 - First Ruleset Vertical Slice
+- Deliverable: added explicit Slay-like objective state, terminal success/failure objective transitions, defeat phase handling, and refreshed completed-encounter replay hashes.
+- Files changed: `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, `packages/rulesets/fixtures/slay-like-completed-replay.json`, `docs/adr/0014-slay-like-objective-transitions.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/rulesets/src packages/replay/src packages/core/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across `packages/core`, `packages/rulesets`, and `packages/replay`.
+- Result: passed after refreshing replay hashes to include objective state and objective transition events.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: Phase 2 exit gate is locally satisfied: a Slay-like encounter can complete through command dispatch, enemy intent resolves deterministically, reward draft modifies the deck, and replay reproduces the encounter.

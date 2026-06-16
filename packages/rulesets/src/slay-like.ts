@@ -6,6 +6,7 @@ import {
   GAIN_RESOURCE_EFFECT_TYPE,
   MOVE_OBJECT_EFFECT_TYPE,
   SPEND_RESOURCE_EFFECT_TYPE,
+  checkObjectives,
   createCoreEffectRegistry,
   createGameObject,
   createInitialGameState,
@@ -22,6 +23,7 @@ import type {
   GameObject,
   GameState,
   JsonObject,
+  ObjectiveState,
   PlayerId,
   RuleError,
   RuleEvent,
@@ -37,6 +39,7 @@ export const SLAY_LIKE_PHASES = {
   enemyTurn: "enemyTurn",
   reward: "reward",
   complete: "complete",
+  defeat: "defeat",
 } as const;
 
 export const SLAY_LIKE_ZONES = {
@@ -78,6 +81,16 @@ export const SLAY_LIKE_EVENTS = {
   playerTurnStarted: "SlayPlayerTurnStarted",
   rewardDraftOpened: "SlayRewardDraftOpened",
   encounterCompleted: "SlayEncounterCompleted",
+} as const;
+
+export const SLAY_LIKE_OBJECTIVES = {
+  defeatEnemies: "slay.defeatEnemies",
+  surviveEncounter: "slay.surviveEncounter",
+} as const;
+
+export const SLAY_LIKE_FLAGS = {
+  encounterComplete: "slay.encounterComplete",
+  playerDefeated: "slay.playerDefeated",
 } as const;
 
 export interface SlayLikeCardDefinition {
@@ -267,6 +280,7 @@ export function createSlayLikeEncounter(input: CreateSlayLikeEncounterInput): Ga
       activePlayerId: playerId,
     }),
     phase: SLAY_LIKE_PHASES.playerTurn,
+    objectives: createInitialSlayLikeObjectives(playerId),
     resources: {
       [playerId]: {
         playerId,
@@ -452,16 +466,21 @@ export function createSlayLikeCommandRegistry(): CommandRegistry {
             toZoneId: SLAY_LIKE_ZONES.discardPile,
           },
         }));
+        const resolveEnemyIntentEffect: Effect = {
+          id: "resolve-enemy-intent",
+          type: SLAY_LIKE_EFFECTS.resolveEnemyIntent,
+          payload: {
+            playerId: command.playerId,
+          },
+        };
+
+        if (willEnemyIntentDefeatPlayer(state, command.playerId)) {
+          return [...discardHandEffects, resolveEnemyIntentEffect];
+        }
 
         return [
           ...discardHandEffects,
-          {
-            id: "resolve-enemy-intent",
-            type: SLAY_LIKE_EFFECTS.resolveEnemyIntent,
-            payload: {
-              playerId: command.playerId,
-            },
-          },
+          resolveEnemyIntentEffect,
           {
             id: "start-next-player-turn",
             type: SLAY_LIKE_EFFECTS.startPlayerTurn,
@@ -576,6 +595,27 @@ export function createDefaultRelics(): readonly SlayLikeRelicDefinition[] {
   }
 
   return [burningBlood];
+}
+
+function createInitialSlayLikeObjectives(playerId: PlayerId): readonly ObjectiveState[] {
+  return [
+    {
+      id: SLAY_LIKE_OBJECTIVES.defeatEnemies,
+      type: "SlayDefeatEnemies",
+      status: "pending",
+      payload: {
+        enemyZoneId: SLAY_LIKE_ZONES.enemy,
+      },
+    },
+    {
+      id: SLAY_LIKE_OBJECTIVES.surviveEncounter,
+      type: "SlaySurviveEncounter",
+      status: "pending",
+      payload: {
+        playerId,
+      },
+    },
+  ];
 }
 
 function createStarterCardObject(card: SlayLikeStarterCard, ownerId: PlayerId): GameObject {
@@ -877,9 +917,15 @@ function resolveEnemyIntent(
   const hitPointLoss = totalDamage - blockedAmount;
   const nextBlock = previousBlock - blockedAmount;
   const nextHitPoints = Math.max(0, previousHitPoints - hitPointLoss);
+  const playerDefeated = nextHitPoints === 0;
+  const nextPhase = playerDefeated ? SLAY_LIKE_PHASES.defeat : SLAY_LIKE_PHASES.enemyTurn;
   const nextState: GameState = {
     ...state,
-    phase: SLAY_LIKE_PHASES.enemyTurn,
+    phase: nextPhase,
+    flags: {
+      ...state.flags,
+      ...(playerDefeated ? { [SLAY_LIKE_FLAGS.playerDefeated]: true } : {}),
+    },
     resources: {
       ...state.resources,
       [playerId]: {
@@ -898,7 +944,7 @@ function resolveEnemyIntent(
     payload: {
       playerId,
       previousPhase: state.phase,
-      nextPhase: SLAY_LIKE_PHASES.enemyTurn,
+      nextPhase,
       enemyIntents,
       totalDamage,
       blockedAmount,
@@ -911,7 +957,9 @@ function resolveEnemyIntent(
     ...eventCause(commandId, effect),
   };
 
-  return singleEventSuccess(nextState, event);
+  return playerDefeated
+    ? singleEventWithObjectives(nextState, event, playerId)
+    : singleEventSuccess(nextState, event);
 }
 
 function startPlayerTurn(
@@ -1062,6 +1110,10 @@ function completeEncounter(
   const nextState: GameState = {
     ...state,
     phase: SLAY_LIKE_PHASES.complete,
+    flags: {
+      ...state.flags,
+      [SLAY_LIKE_FLAGS.encounterComplete]: true,
+    },
   };
   const event: RuleEvent = {
     id: eventIdFor(commandId, effect),
@@ -1075,7 +1127,7 @@ function completeEncounter(
     ...eventCause(commandId, effect),
   };
 
-  return singleEventSuccess(nextState, event);
+  return singleEventWithObjectives(nextState, event, playerId);
 }
 
 function willDefeatTarget(state: GameState, targetObjectId: string, damage: number): boolean {
@@ -1091,6 +1143,18 @@ function willDefeatTarget(state: GameState, targetObjectId: string, damage: numb
 
   const block = readNumberAttribute(target, "block") ?? 0;
   const hitPointLoss = Math.max(0, damage - block);
+
+  return Math.max(0, hitPoints - hitPointLoss) === 0;
+}
+
+function willEnemyIntentDefeatPlayer(state: GameState, playerId: PlayerId): boolean {
+  const totalDamage = livingEnemyIds(state).reduce((sum, enemyObjectId) => {
+    const enemy = state.objects[enemyObjectId];
+    return sum + (enemy ? (readNumberAttribute(enemy, "intentDamage") ?? 0) : 0);
+  }, 0);
+  const block = state.resources[playerId]?.values[SLAY_LIKE_RESOURCES.block] ?? 0;
+  const hitPoints = readPlayerHitPoints(state, playerId);
+  const hitPointLoss = Math.max(0, totalDamage - block);
 
   return Math.max(0, hitPoints - hitPointLoss) === 0;
 }
@@ -1156,6 +1220,55 @@ function singleEventSuccess(state: GameState, event: RuleEvent): RuleResult {
   };
 }
 
+function singleEventWithObjectives(
+  state: GameState,
+  event: RuleEvent,
+  playerId: PlayerId,
+): RuleResult {
+  const objectiveResult = checkObjectives(state, {
+    eventIdPrefix: `${event.id}:objectives`,
+    definitions: [
+      {
+        id: SLAY_LIKE_OBJECTIVES.defeatEnemies,
+        type: "SlayDefeatEnemies",
+        payload: {
+          enemyZoneId: SLAY_LIKE_ZONES.enemy,
+        },
+        isSatisfied: (candidate) => candidate.flags[SLAY_LIKE_FLAGS.encounterComplete] === true,
+      },
+      {
+        id: SLAY_LIKE_OBJECTIVES.surviveEncounter,
+        type: "SlaySurviveEncounter",
+        payload: {
+          playerId,
+        },
+        isSatisfied: (candidate) =>
+          candidate.flags[SLAY_LIKE_FLAGS.encounterComplete] === true &&
+          readPlayerHitPoints(candidate, playerId) > 0,
+        isFailed: (candidate) => candidate.flags[SLAY_LIKE_FLAGS.playerDefeated] === true,
+      },
+    ],
+  });
+
+  if (!objectiveResult.ok) {
+    return objectiveResult;
+  }
+
+  const eventPresentationIntent = {
+    id: `${event.id}:presentation`,
+    type: event.type,
+    eventId: event.id,
+    payload: event.payload,
+  };
+
+  return {
+    ok: true,
+    state: objectiveResult.state,
+    events: [event, ...objectiveResult.events],
+    presentationIntents: [eventPresentationIntent, ...objectiveResult.presentationIntents],
+  };
+}
+
 function eventIdFor(commandId: Command["id"] | undefined, effect: Effect): string {
   return commandId ? `${commandId}:${effect.id}` : effect.id;
 }
@@ -1171,6 +1284,10 @@ function readNumberAttribute(object: GameObject, attribute: string): number | un
   const value = object.attributes[attribute];
 
   return typeof value === "number" ? value : undefined;
+}
+
+function readPlayerHitPoints(state: GameState, playerId: PlayerId): number {
+  return state.resources[playerId]?.values[SLAY_LIKE_RESOURCES.playerHp] ?? 0;
 }
 
 function readEffectString(effect: Effect, key: string): string {
