@@ -4,6 +4,7 @@ import {
   THEATER_ANCHOR_IDS,
   createTheaterActorPlacements,
   createTheaterAnchorLayout,
+  createTheaterCardFaceModel,
   groupTheaterActorsByAnchor,
 } from "./index.js";
 
@@ -139,5 +140,52 @@ describe("theater-three anchor layout", () => {
     expect(drawPlacement?.anchorId).toBe(THEATER_ANCHOR_IDS.drawPile);
     expect(handPlacement?.anchorId).toBe(THEATER_ANCHOR_IDS.hand);
     expect(drawPlacement?.position).not.toEqual(handPlacement?.position);
+  });
+
+  it("creates deterministic card face models for card, enemy, and reward actors", () => {
+    expect(
+      createTheaterCardFaceModel({
+        id: "strike-1",
+        label: "Strike",
+        anchorId: THEATER_ANCHOR_IDS.hand,
+        kind: "card",
+      }),
+    ).toEqual({
+      label: "Strike",
+      subtitle: "Hand",
+      backgroundColor: "#f1eee6",
+      accentColor: "#4a6e5d",
+      textColor: "#171611",
+    });
+
+    expect(
+      createTheaterCardFaceModel({
+        id: "jaw-worm",
+        label: "Jaw Worm",
+        anchorId: THEATER_ANCHOR_IDS.enemy,
+        kind: "enemy",
+      }),
+    ).toEqual({
+      label: "Jaw Worm",
+      subtitle: "Enemy",
+      backgroundColor: "#3a1f19",
+      accentColor: "#d67d63",
+      textColor: "#fff1e8",
+    });
+
+    expect(
+      createTheaterCardFaceModel({
+        id: "reward-1",
+        label: "Iron Wave",
+        anchorId: THEATER_ANCHOR_IDS.reward,
+        kind: "reward",
+      }),
+    ).toEqual({
+      label: "Iron Wave",
+      subtitle: "Reward",
+      backgroundColor: "#17312a",
+      accentColor: "#5fc19e",
+      textColor: "#f7fff9",
+    });
   });
 });

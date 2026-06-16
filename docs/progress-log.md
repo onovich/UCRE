@@ -4,9 +4,9 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 ## Current Status
 
-- Current phase: Phase 5 - Three.js Card Theater Vertical Slice
+- Current phase: Phase 6 - Presentation Director
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add card texture generation path and complete the Phase 5 exit smoke.
+- Next recommended round: add presentation beat contracts and scheduler scaffold.
 
 ## Round Template
 
@@ -291,5 +291,15 @@ Notes:
 - Files changed: `packages/theater-three/src/index.ts`, `packages/theater-three/src/index.test.ts`, `apps/game/src/TheaterCanvas.tsx`, `apps/game/src/styles.css`, `docs/adr/0023-theater-local-movement-snap.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/theater-three/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/theater-three build`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, browser Draw/Skip and Strike/Skip canvas-hash smoke, headless console smoke, mobile 390px skip/layout overflow check, Chrome headless screenshot pixel smoke with non-background canvas-center ratio `0.2609`, full project validation, and architecture boundary searches with frame timing isolated to `@ucre/theater-three`.
 - Result: passed.
-- Commit: pending.
+- Commit: `e70dc41 feat(theater): animate actor movement`
 - Notes: Animation timing stays local to `@ucre/theater-three`; deterministic packages still have no frame timing or presentation dependency.
+
+### 2026-06-17 - Round P5R4
+
+- Phase: Phase 5 - Three.js Card Theater Vertical Slice
+- Deliverable: added deterministic card face models, browser canvas texture generation for card/enemy/reward actors, texture signature reuse, and texture disposal.
+- Files changed: `packages/theater-three/src/index.ts`, `packages/theater-three/src/index.test.ts`, `docs/adr/0024-theater-card-texture-generation.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/theater-three/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/theater-three build`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, browser Draw/Skip and Strike/Skip canvas-hash smoke with textured cards, headless console smoke, mobile 390px texture/layout overflow check, Chrome headless screenshot pixel smoke with non-background canvas-center ratio `0.2609`, full project validation, and architecture boundary searches with canvas generation isolated to `@ucre/theater-three`.
+- Result: passed.
+- Commit: pending.
+- Notes: Phase 5 exit gate is locally satisfied: cards visually move between rule-correct anchors, skip snaps to the final state, textured card faces render in the Three.js canvas, and screenshot smoke remains nonblank.

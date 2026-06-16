@@ -44,6 +44,14 @@ export interface TheaterActorPlacement {
   readonly rotation: readonly [number, number, number];
 }
 
+export interface TheaterCardFaceModel {
+  readonly label: string;
+  readonly subtitle: string;
+  readonly backgroundColor: string;
+  readonly accentColor: string;
+  readonly textColor: string;
+}
+
 export interface CardTheater {
   readonly anchors: readonly TheaterAnchor[];
   resize(width: number, height: number): void;
@@ -55,6 +63,8 @@ export interface CardTheater {
 
 const CARD_WIDTH = 0.44;
 const CARD_HEIGHT = 0.64;
+const CARD_TEXTURE_WIDTH = 256;
+const CARD_TEXTURE_HEIGHT = 368;
 const MOVE_ANIMATION_DURATION_MS = 360;
 const POSITION_EPSILON = 0.001;
 const ROTATION_EPSILON = 0.001;
@@ -150,6 +160,38 @@ export function createTheaterActorPlacements(
   }
 
   return placements;
+}
+
+export function createTheaterCardFaceModel(actor: TheaterActor): TheaterCardFaceModel {
+  if (actor.kind === "enemy") {
+    return {
+      label: actor.label,
+      subtitle: "Enemy",
+      backgroundColor: "#3a1f19",
+      accentColor: toCssHexColor(getActorColor(actor)),
+      textColor: "#fff1e8",
+    };
+  }
+
+  if (actor.kind === "reward") {
+    return {
+      label: actor.label,
+      subtitle: "Reward",
+      backgroundColor: "#17312a",
+      accentColor: toCssHexColor(getActorColor(actor)),
+      textColor: "#f7fff9",
+    };
+  }
+
+  return {
+    label: actor.label,
+    subtitle: getAnchorSubtitle(actor.anchorId),
+    backgroundColor: "#f1eee6",
+    accentColor: toCssHexColor(
+      actor.anchorId === THEATER_ANCHOR_IDS.hand ? 0x4a6e5d : getActorColor(actor),
+    ),
+    textColor: "#171611",
+  };
 }
 
 export function createCardTheater(canvas: HTMLCanvasElement): CardTheater {
@@ -381,13 +423,107 @@ function createActorMesh(actor: TheaterActor): CardActorMesh {
 
 function updateActorMeshMetadata(mesh: CardActorMesh, actor: TheaterActor): void {
   mesh.name = actor.id;
-  mesh.userData = {
-    actorId: actor.id,
-    anchorId: actor.anchorId,
-    kind: actor.kind,
-    label: actor.label,
-  };
-  mesh.material.color.setHex(getActorColor(actor));
+  mesh.userData.actorId = actor.id;
+  mesh.userData.anchorId = actor.anchorId;
+  mesh.userData.kind = actor.kind;
+  mesh.userData.label = actor.label;
+  const textureSignature = getActorTextureSignature(actor);
+  if (mesh.userData.textureSignature !== textureSignature) {
+    mesh.material.map?.dispose();
+    mesh.material.map = createActorTexture(actor) ?? null;
+    mesh.material.color.setHex(mesh.material.map ? 0xffffff : getActorColor(actor));
+    mesh.material.needsUpdate = true;
+    mesh.userData.textureSignature = textureSignature;
+  }
+}
+
+function createActorTexture(actor: TheaterActor): THREE.CanvasTexture | undefined {
+  if (typeof document === "undefined") {
+    return undefined;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CARD_TEXTURE_WIDTH;
+  canvas.height = CARD_TEXTURE_HEIGHT;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return undefined;
+  }
+
+  drawCardFace(context, createTheaterCardFaceModel(actor));
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.flipY = false;
+  texture.premultiplyAlpha = false;
+  texture.anisotropy = 4;
+  return texture;
+}
+
+function drawCardFace(context: CanvasRenderingContext2D, face: TheaterCardFaceModel): void {
+  context.fillStyle = face.backgroundColor;
+  context.fillRect(0, 0, CARD_TEXTURE_WIDTH, CARD_TEXTURE_HEIGHT);
+
+  context.strokeStyle = face.accentColor;
+  context.lineWidth = 14;
+  context.strokeRect(7, 7, CARD_TEXTURE_WIDTH - 14, CARD_TEXTURE_HEIGHT - 14);
+
+  context.fillStyle = face.accentColor;
+  context.fillRect(24, 26, CARD_TEXTURE_WIDTH - 48, 54);
+
+  context.fillStyle = face.textColor;
+  context.font = "700 26px Arial, sans-serif";
+  context.textBaseline = "middle";
+  context.fillText(face.subtitle, 36, 53, CARD_TEXTURE_WIDTH - 72);
+
+  context.font = "800 34px Arial, sans-serif";
+  context.textBaseline = "top";
+  drawWrappedText(context, face.label, 32, 118, CARD_TEXTURE_WIDTH - 64, 40, 4);
+
+  context.fillStyle = face.accentColor;
+  context.fillRect(40, CARD_TEXTURE_HEIGHT - 68, CARD_TEXTURE_WIDTH - 80, 6);
+}
+
+function drawWrappedText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines: number,
+): void {
+  const words = text.trim().split(/\s+/);
+  let line = "";
+  let lineIndex = 0;
+
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (context.measureText(candidate).width <= maxWidth) {
+      line = candidate;
+      continue;
+    }
+
+    if (line) {
+      context.fillText(line, x, y + lineIndex * lineHeight, maxWidth);
+      lineIndex += 1;
+    }
+
+    line = word;
+    if (lineIndex >= maxLines - 1) {
+      break;
+    }
+  }
+
+  if (lineIndex < maxLines && line) {
+    context.fillText(line, x, y + lineIndex * lineHeight, maxWidth);
+  }
+}
+
+function getActorTextureSignature(actor: TheaterActor): string {
+  const face = createTheaterCardFaceModel(actor);
+  return [face.label, face.subtitle, face.backgroundColor, face.accentColor, face.textColor].join(
+    "|",
+  );
 }
 
 function hasMeshPlacementChanged(mesh: CardActorMesh, placement: TheaterActorPlacement): boolean {
@@ -459,6 +595,34 @@ function getActorColor(actor: TheaterActor): number {
   return 0xf1eee6;
 }
 
+function getAnchorSubtitle(anchorId: TheaterAnchorId): string {
+  if (anchorId === THEATER_ANCHOR_IDS.drawPile) {
+    return "Draw";
+  }
+
+  if (anchorId === THEATER_ANCHOR_IDS.hand) {
+    return "Hand";
+  }
+
+  if (anchorId === THEATER_ANCHOR_IDS.playArea) {
+    return "Play";
+  }
+
+  if (anchorId === THEATER_ANCHOR_IDS.discardPile) {
+    return "Discard";
+  }
+
+  if (anchorId === THEATER_ANCHOR_IDS.reward) {
+    return "Reward";
+  }
+
+  return "Card";
+}
+
+function toCssHexColor(color: number): string {
+  return `#${color.toString(16).padStart(6, "0")}`;
+}
+
 function clearGroup(group: THREE.Group): void {
   for (const child of [...group.children]) {
     group.remove(child);
@@ -477,10 +641,18 @@ function disposeObject(object: THREE.Object3D): void {
 
     if (Array.isArray(object.material)) {
       for (const material of object.material) {
-        material.dispose();
+        disposeMaterial(material);
       }
     } else {
-      object.material.dispose();
+      disposeMaterial(object.material);
     }
   }
+}
+
+function disposeMaterial(material: THREE.Material): void {
+  if (material instanceof THREE.MeshStandardMaterial) {
+    material.map?.dispose();
+  }
+
+  material.dispose();
 }
