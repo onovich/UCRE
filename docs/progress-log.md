@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 7 - Roguelike Run Loop
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add run replay viewer integration.
+- Next recommended round: add short run E2E.
 
 ## Round Template
 
@@ -401,5 +401,15 @@ Notes:
 - Files changed: `packages/run-dexie/*`, `tsconfig.packages.json`, `scripts/check-architecture.mjs`, `docs/development-plan.md`, `docs/adr/0033-run-dexie-persistence-adapter.md`, `pnpm-lock.yaml`, and this progress log.
 - Validation: `corepack pnpm test -- packages/run-dexie/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/run-dexie build`, full project validation, and architecture boundary searches confirming Dexie/IndexedDB are isolated to `@ucre/run-dexie`.
 - Result: passed after correcting the Dexie import form for TypeScript.
-- Commit: pending.
+- Commit: `d947d1c feat(run): add dexie save adapter`
 - Notes: Persistence now stores only verified save packages and keeps wall-clock time out by requiring caller-provided update sequences.
+
+### 2026-06-17 - Round P7R6
+
+- Phase: Phase 7 - Roguelike Run Loop
+- Deliverable: integrated run save package inspection into the replay-viewer app with verified save hash status, map nodes, command log, snapshots, and reward/deck summary.
+- Files changed: `apps/replay-viewer/package.json`, `apps/replay-viewer/index.html`, `apps/replay-viewer/src/App.tsx`, `pnpm-lock.yaml`, and this progress log.
+- Validation: `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/replay-viewer build`, replay-viewer Vite dev server smoke on `http://127.0.0.1:5174`, system Chrome browser smoke for verified save/hash/reward/deck content and mobile 390px overflow, full project validation, and architecture boundary searches confirming replay-viewer consumes run contracts without direct core dependency or storage coupling.
+- Result: passed after replacing an unnecessary direct `@ucre/core` type import and adding an inline favicon to remove browser 404 noise.
+- Commit: pending.
+- Notes: The replay viewer now displays a deterministic run-level save package and validates the save hash in the browser.

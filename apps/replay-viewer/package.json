@@ -4,10 +4,12 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@ucre/run": "workspace:*",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "scripts": {
-    "build": "vite build"
+    "build": "vite build",
+    "dev": "vite --host 127.0.0.1 --port 5174"
   }
 }
