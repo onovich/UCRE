@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 1 - Deterministic Rules Core
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: implement the command/effect pipeline with explicit effect resolution.
+- Next recommended round: implement trigger queue and objective check helpers.
 
 ## Round Template
 
@@ -81,5 +81,15 @@ Notes:
 - Files changed: `packages/core/src/effects.ts`, `packages/core/src/effects.test.ts`, `docs/adr/0004-resource-damage-destroy-effects.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and Phase 1 forbidden dependency/nondeterminism searches.
 - Result: passed.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `d98a69c feat(core): add resource damage and destroy effects`
 - Notes: Resource and counter failures leave state unchanged; damage applies block before hit point loss; destroy removes objects from both object map and zone membership.
+
+### 2026-06-17 - Round P1R5
+
+- Phase: Phase 1 - Deterministic Rules Core
+- Deliverable: added a command/effect pipeline with command handlers, explicit effect resolver registry, core effect payload decoding, deterministic event ID derivation, and custom resolver support.
+- Files changed: `packages/core/src/pipeline.ts`, `packages/core/src/pipeline.test.ts`, `packages/core/src/index.ts`, `docs/adr/0005-command-effect-pipeline.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and Phase 1 forbidden dependency/nondeterminism searches.
+- Result: passed after repairing `exactOptionalPropertyTypes`, readonly accumulator, and invalid-payload state preservation issues.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: Commands validate before effects, effects resolve in order, and payload decode failures keep the current state unchanged.
