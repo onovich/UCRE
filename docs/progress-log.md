@@ -4,9 +4,9 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 ## Current Status
 
-- Current phase: Phase 4 - Game Shell And Devtools
+- Current phase: Phase 5 - Three.js Card Theater Vertical Slice
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: expand trigger queue and RNG inspectors into a dedicated diagnostics panel.
+- Next recommended round: integrate a Three.js scene shell into the game app.
 
 ## Round Template
 
@@ -251,5 +251,15 @@ Notes:
 - Files changed: `apps/game/src/App.tsx`, `apps/game/src/styles.css`, and this progress log.
 - Validation: `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, browser smoke for preview -> Draw -> Strike -> End Turn, mobile 390px overflow check, browser console check, direct UI state mutation audit, full project validation, and forbidden dependency/nondeterminism searches.
 - Result: passed.
-- Commit: pending.
+- Commit: `03291fd feat(game): add command previews and state diff`
 - Notes: Preview uses the same Slay-like command helper against the current immutable state and only displays the simulated result; committed UI state still changes only from dispatched command results.
+
+### 2026-06-17 - Round P4R3
+
+- Phase: Phase 4 - Game Shell And Devtools
+- Deliverable: expanded the game shell debug area into a Run Inspector with rules version, seed, content hash, command count, RNG stream status, trigger queue entries, and objective details.
+- Files changed: `apps/game/src/App.tsx`, `apps/game/src/styles.css`, and this progress log.
+- Validation: `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/game build`, dev-server wrapper start/smoke/stop, browser Run Inspector smoke, mobile 390px overflow check, browser console check, direct UI state mutation audit, full project validation, and forbidden dependency/nondeterminism searches.
+- Result: passed.
+- Commit: pending.
+- Notes: Phase 4 exit gate is locally satisfied: the browser shell can start, draw, play a card, end a turn, inspect event/state/debug panels, and no UI path mutates `GameState` outside command dispatch.

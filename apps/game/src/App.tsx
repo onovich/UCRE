@@ -274,9 +274,13 @@ export function App({ appName = "UCRE Game" }: AppProps) {
           ) : null}
         </section>
 
-        <aside className="side-panel" aria-label="Debug">
-          <h2>Debug</h2>
+        <aside className="side-panel inspector-panel" aria-label="Run inspector">
+          <h2>Run Inspector</h2>
           <dl className="debug-list">
+            <div>
+              <dt>Rules</dt>
+              <dd>{state.rulesVersion}</dd>
+            </div>
             <div>
               <dt>Seed</dt>
               <dd>{state.seed}</dd>
@@ -286,14 +290,48 @@ export function App({ appName = "UCRE Game" }: AppProps) {
               <dd>{state.contentManifestHash}</dd>
             </div>
             <div>
-              <dt>Triggers</dt>
-              <dd>{state.triggerQueue.length}</dd>
-            </div>
-            <div>
-              <dt>Objectives</dt>
-              <dd>{state.objectives.map((objective) => objective.status).join(", ")}</dd>
+              <dt>Commands</dt>
+              <dd>{timeline.length}</dd>
             </div>
           </dl>
+
+          <section className="inspector-block" aria-label="RNG streams">
+            <h3>RNG Streams</h3>
+            <ol className="inspector-list">
+              <li>
+                <strong>encounter</strong>
+                <span>{state.seed}</span>
+                <span>idle</span>
+              </li>
+            </ol>
+          </section>
+
+          <section className="inspector-block" aria-label="Trigger queue">
+            <h3>Trigger Queue</h3>
+            {state.triggerQueue.length === 0 ? <p className="quiet-text">Empty</p> : null}
+            <ol className="inspector-list">
+              {state.triggerQueue.map((trigger) => (
+                <li key={trigger.id}>
+                  <strong>{trigger.type}</strong>
+                  <span>{trigger.id}</span>
+                  <span>{formatDiffValue(trigger.payload)}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section className="inspector-block" aria-label="Objectives">
+            <h3>Objectives</h3>
+            <ol className="inspector-list">
+              {state.objectives.map((objective) => (
+                <li key={objective.id}>
+                  <strong>{objective.status}</strong>
+                  <span>{objective.id}</span>
+                  <span>{formatDiffValue(objective.payload)}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
         </aside>
       </section>
 

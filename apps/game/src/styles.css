@@ -304,7 +304,7 @@ button:disabled {
 .debug-list {
   display: grid;
   gap: 10px;
-  margin: 0;
+  margin: 0 0 14px;
 }
 
 .debug-list div {
@@ -321,6 +321,52 @@ button:disabled {
 
 .debug-list dd {
   margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.inspector-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.inspector-block {
+  border-top: 1px solid #302d25;
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.inspector-block h3 {
+  color: #f8e8bb;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.inspector-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.inspector-list li {
+  background: #171611;
+  border: 1px solid #333027;
+  border-radius: 6px;
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+}
+
+.inspector-list strong {
+  color: #f1eee6;
+  overflow-wrap: anywhere;
+}
+
+.inspector-list span {
+  color: #c7bea8;
+  font-size: 0.82rem;
   overflow-wrap: anywhere;
 }
 
