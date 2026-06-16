@@ -1,6 +1,8 @@
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
-import { compileContentManifest } from "./index.js";
+import { compileContentManifest, loadContentManifestFile } from "./index.js";
 
 describe("content compiler", () => {
   it("compiles a valid manifest to canonical JSON", () => {
@@ -158,6 +160,22 @@ describe("content compiler", () => {
     expect(first.manifestHash).toBe(second.manifestHash);
   });
 
+  it("loads equivalent JSON, JSON5, and YAML authoring examples", () => {
+    const json = loadContentManifestFile(fixturePath("slay-like-valid-manifest.json"));
+    const json5 = loadContentManifestFile(fixturePath("slay-like-valid-manifest.json5"));
+    const yaml = loadContentManifestFile(fixturePath("slay-like-valid-manifest.yaml"));
+
+    expect(json.ok).toBe(true);
+    expect(json5.ok).toBe(true);
+    expect(yaml.ok).toBe(true);
+    if (!json.ok || !json5.ok || !yaml.ok) {
+      throw new Error("Content authoring fixtures unexpectedly failed.");
+    }
+
+    expect(json.manifestHash).toBe(json5.manifestHash);
+    expect(json.manifestHash).toBe(yaml.manifestHash);
+  });
+
   it("rejects duplicate ids and missing reward cards", () => {
     const result = compileContentManifest({
       manifestId: "badManifest",
@@ -280,3 +298,7 @@ describe("content compiler", () => {
     ]);
   });
 });
+
+function fixturePath(filename: string): string {
+  return fileURLToPath(new URL(`../fixtures/${filename}`, import.meta.url));
+}

@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 3 - Content Schema And Compiler
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add YAML/JSON5 authoring examples and loader support.
+- Next recommended round: feed compiled content into Slay-like ruleset tests.
 
 ## Round Template
 
@@ -211,5 +211,15 @@ Notes:
 - Files changed: `package.json`, `packages/content-compiler/package.json`, `packages/content-compiler/tsconfig.json`, `packages/content-compiler/src/index.ts`, `packages/content-compiler/src/index.test.ts`, `packages/content-compiler/src/cli.ts`, `packages/content-compiler/fixtures/slay-like-valid-manifest.json`, `pnpm-lock.yaml`, `docs/adr/0017-content-manifest-hash-lint.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/content-compiler/src packages/content-schema/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `corepack pnpm --filter @ucre/content-compiler build`, `corepack pnpm content:lint packages/content-compiler/fixtures/slay-like-valid-manifest.json`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across core, replay, rulesets, content schema, and content compiler packages.
 - Result: passed.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `8d827d1 feat(content): add manifest hash lint`
 - Notes: Manifest hashes are computed from canonicalized content via core `stableHash`, so equivalent authoring order produces the same manifest identity.
+
+### 2026-06-17 - Round P3R4
+
+- Phase: Phase 3 - Content Schema And Compiler
+- Deliverable: added JSON5 and YAML authoring file loader support, equivalent authoring fixtures, and CLI lint coverage for JSON, JSON5, and YAML manifests.
+- Files changed: `packages/content-compiler/package.json`, `packages/content-compiler/src/index.ts`, `packages/content-compiler/src/index.test.ts`, `packages/content-compiler/src/cli.ts`, `packages/content-compiler/fixtures/slay-like-valid-manifest.json5`, `packages/content-compiler/fixtures/slay-like-valid-manifest.yaml`, `pnpm-lock.yaml`, `docs/adr/0018-content-authoring-loaders.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/content-compiler/src packages/content-schema/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `corepack pnpm --filter @ucre/content-compiler build`, `corepack pnpm content:lint packages/content-compiler/fixtures/slay-like-valid-manifest.json5`, `corepack pnpm content:lint packages/content-compiler/fixtures/slay-like-valid-manifest.yaml`, full project validation, and forbidden dependency/nondeterminism searches across core, replay, rulesets, content schema, and content compiler packages.
+- Result: passed.
+- Commit: pending.
+- Notes: JSON, JSON5, and YAML variants of the sample manifest produce the same canonical manifest hash, `ucre1-03523306`.

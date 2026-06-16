@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@ucre/content-schema": "workspace:*",
     "@ucre/core": "workspace:*",
-    "@ucre/content-schema": "workspace:*"
+    "json5": "^2.2.3",
+    "yaml": "^2.9.0"
   },
   "bin": {
     "ucre-content-lint": "./dist/cli.js"

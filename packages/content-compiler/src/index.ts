@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { extname } from "node:path";
+
 import {
   UCRE_CONTENT_SCHEMA_PACKAGE_ID,
   safeParseContentManifest,
@@ -5,6 +8,8 @@ import {
   type ContentManifest,
 } from "@ucre/content-schema";
 import { stableHash, type StableHash } from "@ucre/core";
+import JSON5 from "json5";
+import { parse as parseYaml } from "yaml";
 
 export interface ContentCompilerIdentity {
   schemaPackageId: typeof UCRE_CONTENT_SCHEMA_PACKAGE_ID;
@@ -27,6 +32,8 @@ export type ContentCompileResult =
       readonly ok: false;
       readonly errors: readonly ContentCompileError[];
     };
+
+export type ContentManifestFormat = "json" | "json5" | "yaml";
 
 interface EffectReference {
   readonly effect: ContentEffect;
@@ -66,6 +73,54 @@ export function compileContentManifest(input: unknown): ContentCompileResult {
     canonicalJson: stringifyCanonicalContentManifest(parsed.data),
     manifestHash: hashContentManifest(parsed.data),
   };
+}
+
+export function loadContentManifestFile(filePath: string): ContentCompileResult {
+  try {
+    return compileContentManifest(
+      parseContentManifestText(readFileSync(filePath, "utf8"), inferManifestFormat(filePath)),
+    );
+  } catch (error) {
+    return {
+      ok: false,
+      errors: [
+        {
+          code: "CONTENT_PARSE_FAILED",
+          path: filePath,
+          message: error instanceof Error ? error.message : "Failed to parse content manifest.",
+        },
+      ],
+    };
+  }
+}
+
+export function parseContentManifestText(text: string, format: ContentManifestFormat): unknown {
+  switch (format) {
+    case "json":
+      return JSON.parse(text) as unknown;
+    case "json5":
+      return JSON5.parse(text) as unknown;
+    case "yaml":
+      return parseYaml(text) as unknown;
+  }
+}
+
+export function inferManifestFormat(filePath: string): ContentManifestFormat {
+  const extension = extname(filePath).toLowerCase();
+
+  if (extension === ".json") {
+    return "json";
+  }
+
+  if (extension === ".json5") {
+    return "json5";
+  }
+
+  if (extension === ".yaml" || extension === ".yml") {
+    return "yaml";
+  }
+
+  throw new Error(`Unsupported content manifest extension: ${extension || "(none)"}.`);
 }
 
 export function validateContentManifest(manifest: ContentManifest): readonly ContentCompileError[] {
