@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 1 - Deterministic Rules Core
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: implement object and zone helpers plus the first `MoveObject` effect.
+- Next recommended round: implement `DrawCards` and `Discard` effects on top of `MoveObject`.
 
 ## Round Template
 
@@ -51,5 +51,15 @@ Notes:
 - Files changed: `packages/core/src/contracts.ts`, `packages/core/src/rng.ts`, `packages/core/src/hash.ts`, core tests, `packages/core/src/index.ts`, `docs/adr/0001-core-contracts-and-rng.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and Phase 1 forbidden dependency/nondeterminism searches.
 - Result: passed.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `c357c29 feat(core): add deterministic contracts and rng`
 - Notes: Core remains free of DOM, React, Three.js, GSAP, Dexie, browser storage, wall-clock reads, and ambient random reads.
+
+### 2026-06-17 - Round P1R2
+
+- Phase: Phase 1 - Deterministic Rules Core
+- Deliverable: added immutable object/zone state helpers and the first `MoveObject` effect that emits rule events plus presentation intents.
+- Files changed: `packages/core/src/state.ts`, `packages/core/src/effects.ts`, state/effect tests, `packages/core/src/index.ts`, `docs/adr/0002-move-object-effect.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and Phase 1 forbidden dependency/nondeterminism searches.
+- Result: passed after formatting `packages/core/src/effects.ts`.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: `MoveObject` leaves state unchanged on missing objects, missing zones, or invalid positions, and it does not generate IDs from ambient state.
