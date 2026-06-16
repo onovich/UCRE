@@ -11,6 +11,8 @@ export type RulesetId = string;
 export type RunStatus = "active" | "complete" | "failed";
 export type RunNodeKind = "start" | "encounter" | "event" | "shop" | "rest" | "boss" | "victory";
 export type RunNodeResolutionKind = "start" | "encounter" | "event" | "shop" | "rest" | "victory";
+export type RunRewardChoiceKind = "card" | "skip" | "custom";
+export type RunRewardDraftStatus = "open" | "claimed" | "skipped";
 
 export interface RunMapNode {
   readonly id: RunNodeId;
@@ -38,7 +40,30 @@ export interface RunState {
   readonly currentNodeId: RunNodeId;
   readonly completedNodeIds: readonly RunNodeId[];
   readonly availableNodeIds: readonly RunNodeId[];
+  readonly deck: readonly RunDeckCard[];
+  readonly rewardDrafts: readonly RunRewardDraft[];
   readonly payload: JsonObject;
+}
+
+export interface RunDeckCard {
+  readonly id: string;
+  readonly definitionId: string;
+  readonly payload: JsonObject;
+}
+
+export interface RunRewardChoice {
+  readonly id: string;
+  readonly kind: RunRewardChoiceKind;
+  readonly payload: JsonObject;
+  readonly card?: RunDeckCard;
+}
+
+export interface RunRewardDraft {
+  readonly id: string;
+  readonly sourceNodeId: RunNodeId;
+  readonly status: RunRewardDraftStatus;
+  readonly choices: readonly RunRewardChoice[];
+  readonly selectedChoiceId?: string;
 }
 
 export interface CreateLinearRunMapInput {
@@ -55,6 +80,8 @@ export interface CreateRunStateInput {
   readonly rulesVersion: string;
   readonly contentManifestHash: string;
   readonly map: RunMap;
+  readonly deck?: readonly RunDeckCard[];
+  readonly rewardDrafts?: readonly RunRewardDraft[];
   readonly payload?: JsonObject;
 }
 
@@ -63,6 +90,36 @@ export interface CompleteRunNodeInput {
   readonly nodeId: RunNodeId;
   readonly payload?: JsonObject;
 }
+
+export interface OpenRunRewardDraftInput {
+  readonly state: RunState;
+  readonly draft: RunRewardDraft;
+}
+
+export interface ClaimRunRewardChoiceInput {
+  readonly state: RunState;
+  readonly draftId: string;
+  readonly choiceId: string;
+}
+
+export interface ClaimRunRewardChoiceSuccess {
+  readonly ok: true;
+  readonly state: RunState;
+}
+
+export interface ClaimRunRewardChoiceFailure {
+  readonly ok: false;
+  readonly state: RunState;
+  readonly code:
+    | "RUN_REWARD_DRAFT_NOT_FOUND"
+    | "RUN_REWARD_DRAFT_CLOSED"
+    | "RUN_REWARD_CHOICE_NOT_FOUND"
+    | "RUN_REWARD_CARD_MISSING"
+    | "RUN_DECK_CARD_ALREADY_EXISTS";
+  readonly message: string;
+}
+
+export type ClaimRunRewardChoiceResult = ClaimRunRewardChoiceSuccess | ClaimRunRewardChoiceFailure;
 
 export interface CreateEncounterNodePayloadInput {
   readonly encounterId: string;
@@ -189,6 +246,8 @@ export function createRunState(input: CreateRunStateInput): RunState {
     currentNodeId: input.map.startNodeId,
     completedNodeIds: [],
     availableNodeIds: [input.map.startNodeId],
+    deck: input.deck ?? [],
+    rewardDrafts: input.rewardDrafts ?? [],
     payload: input.payload ?? {},
   };
 }
@@ -218,6 +277,71 @@ export function completeRunNode(input: CompleteRunNodeInput): RunState {
     completedNodeIds,
     availableNodeIds,
     ...(input.payload ? { payload: { ...state.payload, ...input.payload } } : {}),
+  };
+}
+
+export function openRunRewardDraft(input: OpenRunRewardDraftInput): RunState {
+  if (input.state.rewardDrafts.some((draft) => draft.id === input.draft.id)) {
+    return input.state;
+  }
+
+  return {
+    ...input.state,
+    rewardDrafts: [...input.state.rewardDrafts, input.draft],
+  };
+}
+
+export function claimRunRewardChoice(input: ClaimRunRewardChoiceInput): ClaimRunRewardChoiceResult {
+  const draft = input.state.rewardDrafts.find((candidate) => candidate.id === input.draftId);
+
+  if (!draft) {
+    return createClaimRewardFailure(
+      input.state,
+      "RUN_REWARD_DRAFT_NOT_FOUND",
+      `Run reward draft does not exist: ${input.draftId}`,
+    );
+  }
+
+  if (draft.status !== "open") {
+    return createClaimRewardFailure(
+      input.state,
+      "RUN_REWARD_DRAFT_CLOSED",
+      `Run reward draft is not open: ${input.draftId}`,
+    );
+  }
+
+  const choice = draft.choices.find((candidate) => candidate.id === input.choiceId);
+
+  if (!choice) {
+    return createClaimRewardFailure(
+      input.state,
+      "RUN_REWARD_CHOICE_NOT_FOUND",
+      `Run reward choice does not exist: ${input.choiceId}`,
+    );
+  }
+
+  const deckResult = applyRewardChoiceToDeck(input.state.deck, choice);
+
+  if (!deckResult.ok) {
+    return createClaimRewardFailure(input.state, deckResult.code, deckResult.message);
+  }
+
+  const status: RunRewardDraftStatus = choice.kind === "skip" ? "skipped" : "claimed";
+  return {
+    ok: true,
+    state: {
+      ...input.state,
+      deck: deckResult.deck,
+      rewardDrafts: input.state.rewardDrafts.map((candidate) =>
+        candidate.id === draft.id
+          ? {
+              ...candidate,
+              status,
+              selectedChoiceId: choice.id,
+            }
+          : candidate,
+      ),
+    },
   };
 }
 
@@ -275,6 +399,65 @@ export function hashRunState(state: RunState): StableHash {
 
 function uniqueStrings(values: readonly string[]): readonly string[] {
   return [...new Set(values)];
+}
+
+interface ApplyRewardChoiceDeckSuccess {
+  readonly ok: true;
+  readonly deck: readonly RunDeckCard[];
+}
+
+interface ApplyRewardChoiceDeckFailure {
+  readonly ok: false;
+  readonly code: "RUN_REWARD_CARD_MISSING" | "RUN_DECK_CARD_ALREADY_EXISTS";
+  readonly message: string;
+}
+
+type ApplyRewardChoiceDeckResult = ApplyRewardChoiceDeckSuccess | ApplyRewardChoiceDeckFailure;
+
+function applyRewardChoiceToDeck(
+  deck: readonly RunDeckCard[],
+  choice: RunRewardChoice,
+): ApplyRewardChoiceDeckResult {
+  if (choice.kind !== "card") {
+    return {
+      ok: true,
+      deck,
+    };
+  }
+
+  if (!choice.card) {
+    return {
+      ok: false,
+      code: "RUN_REWARD_CARD_MISSING",
+      message: `Run reward choice has no card payload: ${choice.id}`,
+    };
+  }
+
+  if (deck.some((card) => card.id === choice.card?.id)) {
+    return {
+      ok: false,
+      code: "RUN_DECK_CARD_ALREADY_EXISTS",
+      message: `Run deck already contains card: ${choice.card.id}`,
+    };
+  }
+
+  return {
+    ok: true,
+    deck: [...deck, choice.card],
+  };
+}
+
+function createClaimRewardFailure(
+  state: RunState,
+  code: ClaimRunRewardChoiceFailure["code"],
+  message: string,
+): ClaimRunRewardChoiceFailure {
+  return {
+    ok: false,
+    state,
+    code,
+    message,
+  };
 }
 
 function createEncounterRunNodeResolution(input: RunNodeResolverInput): EncounterRunNodeResolution {

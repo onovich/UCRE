@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 7 - Roguelike Run Loop
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add reward and deck modification loop.
+- Next recommended round: add save package and Dexie persistence.
 
 ## Round Template
 
@@ -371,5 +371,15 @@ Notes:
 - Files changed: `packages/run/src/index.ts`, `packages/run/src/index.test.ts`, `docs/adr/0030-run-node-resolver-contract.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/run/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/run build`, full project validation, and architecture boundary searches confirming resolvers remain pure and do not execute commands, mutate `GameState`, or touch browser/presentation dependencies.
 - Result: passed.
-- Commit: pending.
+- Commit: `2c9ef3f feat(run): add node resolvers`
 - Notes: Run nodes now resolve to serializable descriptors; encounter execution and node completion stay separate for later save/replay integration.
+
+### 2026-06-17 - Round P7R3
+
+- Phase: Phase 7 - Roguelike Run Loop
+- Deliverable: added run-level deck cards, reward drafts, reward choices, card reward claiming, reward skipping, and serializable invalid-claim failures.
+- Files changed: `packages/run/src/index.ts`, `packages/run/src/index.test.ts`, `docs/adr/0031-run-reward-deck-contract.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/run/src`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/run build`, full project validation, and architecture boundary searches confirming reward/deck transitions remain pure, immutable, and free of browser/presentation dependencies.
+- Result: passed.
+- Commit: pending.
+- Notes: Run deck mutation is now a deterministic run transition; save/load and replay can include deck and reward draft state directly in later rounds.

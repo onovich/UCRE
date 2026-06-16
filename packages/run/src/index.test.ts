@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  claimRunRewardChoice,
   completeRunNode,
   createEncounterNodePayload,
   createLinearRunMap,
@@ -8,6 +9,7 @@ import {
   createRunState,
   findRunMapNode,
   hashRunState,
+  openRunRewardDraft,
   resolveRunNode,
 } from "./index.js";
 
@@ -238,6 +240,209 @@ describe("run state and map graph", () => {
       ok: false,
       code: "RUN_NODE_NOT_AVAILABLE",
       message: "Run node is not available: act-1:node:1",
+    });
+  });
+
+  it("opens reward drafts and claims card rewards into the run deck", () => {
+    const state = createRunState({
+      id: "run-1",
+      seed: "run-seed-1",
+      rulesetId: "slay-like",
+      rulesVersion: "0.0.0",
+      contentManifestHash: "ucre1-content",
+      map: createLinearRunMap({
+        id: "act-1",
+        seed: "run-seed-1",
+        nodeKinds: ["start", "encounter"],
+      }),
+      deck: [
+        {
+          id: "strike-1",
+          definitionId: "strike",
+          payload: {},
+        },
+      ],
+    });
+    const withDraft = openRunRewardDraft({
+      state,
+      draft: {
+        id: "draft-1",
+        sourceNodeId: "act-1:node:1",
+        status: "open",
+        choices: [
+          {
+            id: "choice-iron-wave",
+            kind: "card",
+            payload: {},
+            card: {
+              id: "iron-wave-1",
+              definitionId: "iron-wave",
+              payload: {
+                upgraded: false,
+              },
+            },
+          },
+          {
+            id: "choice-skip",
+            kind: "skip",
+            payload: {},
+          },
+        ],
+      },
+    });
+
+    expect(state.rewardDrafts).toEqual([]);
+    expect(withDraft.rewardDrafts).toHaveLength(1);
+
+    const claimed = claimRunRewardChoice({
+      state: withDraft,
+      draftId: "draft-1",
+      choiceId: "choice-iron-wave",
+    });
+
+    expect(claimed.ok).toBe(true);
+    if (claimed.ok) {
+      expect(claimed.state.deck).toEqual([
+        {
+          id: "strike-1",
+          definitionId: "strike",
+          payload: {},
+        },
+        {
+          id: "iron-wave-1",
+          definitionId: "iron-wave",
+          payload: {
+            upgraded: false,
+          },
+        },
+      ]);
+      expect(claimed.state.rewardDrafts[0]).toMatchObject({
+        id: "draft-1",
+        status: "claimed",
+        selectedChoiceId: "choice-iron-wave",
+      });
+    }
+  });
+
+  it("can skip reward drafts without modifying the deck", () => {
+    const state = openRunRewardDraft({
+      state: createRunState({
+        id: "run-1",
+        seed: "run-seed-1",
+        rulesetId: "slay-like",
+        rulesVersion: "0.0.0",
+        contentManifestHash: "ucre1-content",
+        map: createLinearRunMap({
+          id: "act-1",
+          seed: "run-seed-1",
+          nodeKinds: ["start"],
+        }),
+      }),
+      draft: {
+        id: "draft-1",
+        sourceNodeId: "act-1:node:0",
+        status: "open",
+        choices: [
+          {
+            id: "choice-skip",
+            kind: "skip",
+            payload: {},
+          },
+        ],
+      },
+    });
+
+    const skipped = claimRunRewardChoice({
+      state,
+      draftId: "draft-1",
+      choiceId: "choice-skip",
+    });
+
+    expect(skipped.ok).toBe(true);
+    if (skipped.ok) {
+      expect(skipped.state.deck).toEqual([]);
+      expect(skipped.state.rewardDrafts[0]).toMatchObject({
+        status: "skipped",
+        selectedChoiceId: "choice-skip",
+      });
+    }
+  });
+
+  it("rejects invalid reward claims without changing state", () => {
+    const state = openRunRewardDraft({
+      state: createRunState({
+        id: "run-1",
+        seed: "run-seed-1",
+        rulesetId: "slay-like",
+        rulesVersion: "0.0.0",
+        contentManifestHash: "ucre1-content",
+        map: createLinearRunMap({
+          id: "act-1",
+          seed: "run-seed-1",
+          nodeKinds: ["start"],
+        }),
+        deck: [
+          {
+            id: "strike-1",
+            definitionId: "strike",
+            payload: {},
+          },
+        ],
+      }),
+      draft: {
+        id: "draft-1",
+        sourceNodeId: "act-1:node:0",
+        status: "open",
+        choices: [
+          {
+            id: "duplicate-strike",
+            kind: "card",
+            payload: {},
+            card: {
+              id: "strike-1",
+              definitionId: "strike",
+              payload: {},
+            },
+          },
+        ],
+      },
+    });
+
+    expect(
+      claimRunRewardChoice({
+        state,
+        draftId: "missing",
+        choiceId: "duplicate-strike",
+      }),
+    ).toEqual({
+      ok: false,
+      state,
+      code: "RUN_REWARD_DRAFT_NOT_FOUND",
+      message: "Run reward draft does not exist: missing",
+    });
+    expect(
+      claimRunRewardChoice({
+        state,
+        draftId: "draft-1",
+        choiceId: "missing",
+      }),
+    ).toEqual({
+      ok: false,
+      state,
+      code: "RUN_REWARD_CHOICE_NOT_FOUND",
+      message: "Run reward choice does not exist: missing",
+    });
+    expect(
+      claimRunRewardChoice({
+        state,
+        draftId: "draft-1",
+        choiceId: "duplicate-strike",
+      }),
+    ).toEqual({
+      ok: false,
+      state,
+      code: "RUN_DECK_CARD_ALREADY_EXISTS",
+      message: "Run deck already contains card: strike-1",
     });
   });
 });
