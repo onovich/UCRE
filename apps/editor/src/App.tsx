@@ -27,16 +27,20 @@ import {
   type DraftEditorContent,
   type DraftEnemy,
   type DraftRelic,
+  type DraftRulesetMetadata,
   type DraftRewardChoice,
   type DraftRewardPool,
   type EditorEntityKind,
+  type CardEditorCompilePreview,
+  type StaticBalanceCheck,
 } from "./card-editor-model.js";
 
-type WorkspaceView = "content" | "balance";
+type WorkspaceView = "content" | "ruleset" | "balance";
 type SelectionState = Record<EditorEntityKind, string>;
 
 const WORKSPACE_LABELS: Record<WorkspaceView, string> = {
   content: "Content",
+  ruleset: "Ruleset",
   balance: "Balance",
 };
 
@@ -71,6 +75,10 @@ export function App() {
   const canonicalJson = preview.result.ok
     ? preview.result.canonicalJson
     : JSON.stringify(preview.manifest, null, 2);
+  const balanceErrorCount = preview.balanceChecks.filter(
+    (check) => check.severity === "error",
+  ).length;
+  const balanceWarningCount = preview.balanceChecks.length - balanceErrorCount;
 
   function setSelectedId(kind: EditorEntityKind, id: string): void {
     setSelection((currentSelection) => ({
@@ -145,6 +153,16 @@ export function App() {
     if (patch.id) {
       setSelectedId("rewardPools", patch.id);
     }
+  }
+
+  function updateRulesetMetadata(patch: Partial<DraftRulesetMetadata>): void {
+    setContent((currentContent) => ({
+      ...currentContent,
+      ruleset: {
+        ...currentContent.ruleset,
+        ...patch,
+      },
+    }));
   }
 
   function addActiveEntity(): void {
@@ -254,6 +272,11 @@ export function App() {
             {preview.result.ok
               ? preview.result.manifestHash
               : `${preview.result.errors.length} errors`}
+          </span>
+          <span className="status-pill">
+            {preview.balanceChecks.length === 0
+              ? "Checks clean"
+              : `${balanceErrorCount} errors / ${balanceWarningCount} warnings`}
           </span>
         </div>
       </header>
@@ -392,14 +415,111 @@ export function App() {
                 </ul>
               )}
 
+              <StaticBalanceChecks checks={preview.balanceChecks} />
+
               <textarea readOnly value={canonicalJson} aria-label="Canonical manifest preview" />
             </aside>
           </section>
         </>
+      ) : activeWorkspace === "ruleset" ? (
+        <RulesetWorkspace
+          preview={preview}
+          ruleset={content.ruleset}
+          onChange={updateRulesetMetadata}
+        />
       ) : (
         <BalanceDashboard />
       )}
     </main>
+  );
+}
+
+function RulesetWorkspace(props: {
+  readonly ruleset: DraftRulesetMetadata;
+  readonly preview: CardEditorCompilePreview;
+  readonly onChange: (patch: Partial<DraftRulesetMetadata>) => void;
+}) {
+  return (
+    <section className="ruleset-layout" aria-label="Ruleset editor">
+      <section className="editor-panel ruleset-form-panel" aria-label="Ruleset metadata">
+        <div className="panel-heading">
+          <h2>Ruleset</h2>
+          <span className={props.preview.result.ok ? "preview-ok" : "preview-blocked"}>
+            {props.preview.result.ok ? "Compiled" : "Blocked"}
+          </span>
+        </div>
+        <div className="editor-form ruleset-form">
+          <label>
+            <span>Manifest ID</span>
+            <input
+              value={props.ruleset.manifestId}
+              onChange={(event) => props.onChange({ manifestId: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Ruleset ID</span>
+            <input
+              value={props.ruleset.rulesetId}
+              onChange={(event) => props.onChange({ rulesetId: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Version</span>
+            <input
+              value={props.ruleset.version}
+              onChange={(event) => props.onChange({ version: event.target.value })}
+            />
+          </label>
+        </div>
+      </section>
+
+      <aside className="editor-panel ruleset-check-panel" aria-label="Static balance checks">
+        <div className="panel-heading">
+          <h2>Static Checks</h2>
+          <span
+            className={props.preview.balanceChecks.length === 0 ? "preview-ok" : "preview-blocked"}
+          >
+            {props.preview.balanceChecks.length}
+          </span>
+        </div>
+        <StaticBalanceChecks checks={props.preview.balanceChecks} />
+        <dl className="manifest-summary ruleset-summary">
+          <div>
+            <dt>Cards</dt>
+            <dd>{props.preview.manifest.cards.length}</dd>
+          </div>
+          <div>
+            <dt>Reward Pools</dt>
+            <dd>{props.preview.manifest.rewardPools.length}</dd>
+          </div>
+          <div>
+            <dt>Hash</dt>
+            <dd>{props.preview.result.ok ? props.preview.result.manifestHash : "(blocked)"}</dd>
+          </div>
+        </dl>
+      </aside>
+    </section>
+  );
+}
+
+function StaticBalanceChecks(props: { readonly checks: readonly StaticBalanceCheck[] }) {
+  if (props.checks.length === 0) {
+    return <p className="empty-state static-check-empty">No static balance issues.</p>;
+  }
+
+  return (
+    <ul className="static-check-list">
+      {props.checks.map((check) => (
+        <li
+          className={`static-check static-check-${check.severity}`}
+          key={`${check.code}-${check.path}`}
+        >
+          <strong>{check.code}</strong>
+          <span>{check.path}</span>
+          <p>{check.message}</p>
+        </li>
+      ))}
+    </ul>
   );
 }
 

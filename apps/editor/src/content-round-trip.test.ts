@@ -17,13 +17,18 @@ import { compileEditorContent, type DraftEditorContent } from "./card-editor-mod
 describe("editor content round trip", () => {
   it("compiles a new editor card, loads it into Slay-like runtime, plays it, and replays it", () => {
     const editorContent: DraftEditorContent = {
+      ruleset: {
+        manifestId: "roundTripManifest",
+        rulesetId: "slay-like",
+        version: "0.1.0",
+      },
       cards: [
         {
           id: "roundTripStrike",
           name: "Round Trip Strike",
           costText: "1",
           targetPolicy: "enemy",
-          tagsText: "starter, attack",
+          tagsText: "starter, attack, common",
           effects: [
             {
               id: "roundTripStrikeDamage",
@@ -37,7 +42,7 @@ describe("editor content round trip", () => {
           name: "Round Trip Reward",
           costText: "0",
           targetPolicy: "none",
-          tagsText: "reward, skill",
+          tagsText: "reward, skill, common",
           effects: [
             {
               id: "roundTripRewardBlock",

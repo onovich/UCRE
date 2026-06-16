@@ -4,9 +4,9 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 ## Current Status
 
-- Current phase: Phase 9 - Editor, Simulation, And Balance Tools
+- Current phase: Phase 10 - Vertical Demo And Desktop Build
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add static balance checks and ruleset metadata editing.
+- Next recommended round: expand vertical demo content set.
 
 ## Round Template
 
@@ -551,5 +551,15 @@ Notes:
 - Files changed: `apps/editor/src/App.tsx`, `apps/editor/src/styles.css`, `apps/editor/src/balance-dashboard-model.ts`, `apps/editor/src/balance-dashboard-model.test.ts`, and this progress log.
 - Validation: `corepack pnpm test apps/editor/src/balance-dashboard-model.test.ts apps/editor/src/card-editor-model.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/editor build`, Playwright editor smoke on `http://127.0.0.1:5175` for Balance view metrics, invalid JSON state, clean console, and 390px mobile overflow, Phase 9 architecture searches for browser-safe dashboard imports, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed.
-- Commit: pending.
+- Commit: `cca234e feat(editor): add balance dashboard`
 - Notes: The dashboard consumes the stable metrics contract without importing `@ucre/sim`, rulesets, replay, storage, or presentation dependencies into the editor runtime.
+
+### 2026-06-17 - Round P9R8
+
+- Phase: Phase 9 - Editor, Simulation, And Balance Tools
+- Deliverable: added ruleset metadata editing and static balance checks for card rarity, high costs, empty card effects, starter deck coverage, reward pool references, dominant reward weights, and rare-card unlock tags.
+- Files changed: `apps/editor/src/App.tsx`, `apps/editor/src/card-editor-model.ts`, `apps/editor/src/card-editor-model.test.ts`, `apps/editor/src/content-round-trip.test.ts`, `apps/editor/src/styles.css`, and this progress log.
+- Validation: `corepack pnpm test apps/editor/src/card-editor-model.test.ts apps/editor/src/content-round-trip.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/editor build`, Playwright editor smoke on `http://127.0.0.1:5175` for ruleset metadata editing, static check display in Content and Ruleset workspaces, clean console, and 390px mobile overflow, Phase 9 architecture searches for browser-safe editor imports, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after updating the legacy card-only compile adapter to provide default ruleset metadata and accounting for the expected starter-deck warning in static-check tests.
+- Commit: pending.
+- Notes: Phase 9 exit gate is locally satisfied: editor-authored content can round-trip into Slay-like runtime and replay, the simulation CLI emits stable fixed-seed output and metrics, and the editor includes balance dashboard plus static authoring checks without crossing package boundaries.

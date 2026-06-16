@@ -4,6 +4,13 @@ import type { ContentManifest } from "@ucre/content-schema";
 export type CardTargetPolicy = ContentManifest["cards"][number]["targetPolicy"];
 export type DraftEffectKind = "DealDamage" | "GainResource" | "ResourceChanged";
 export type EditorEntityKind = "cards" | "relics" | "enemies" | "rewardPools";
+export type StaticBalanceSeverity = "error" | "warning";
+
+export interface DraftRulesetMetadata {
+  readonly manifestId: string;
+  readonly rulesetId: string;
+  readonly version: string;
+}
 
 export interface DraftCardEffect {
   readonly id: string;
@@ -48,15 +55,24 @@ export interface DraftRewardPool {
 }
 
 export interface DraftEditorContent {
+  readonly ruleset: DraftRulesetMetadata;
   readonly cards: readonly DraftCard[];
   readonly relics: readonly DraftRelic[];
   readonly enemies: readonly DraftEnemy[];
   readonly rewardPools: readonly DraftRewardPool[];
 }
 
+export interface StaticBalanceCheck {
+  readonly severity: StaticBalanceSeverity;
+  readonly code: string;
+  readonly path: string;
+  readonly message: string;
+}
+
 export interface CardEditorCompilePreview {
   readonly manifest: ContentManifest;
   readonly result: ContentCompileResult;
+  readonly balanceChecks: readonly StaticBalanceCheck[];
 }
 
 export const CARD_TARGET_POLICIES: readonly CardTargetPolicy[] = [
@@ -82,10 +98,19 @@ export const EDITOR_ENTITY_KINDS: readonly EditorEntityKind[] = [
 
 export function createInitialDraftContent(): DraftEditorContent {
   return {
+    ruleset: createDefaultDraftRulesetMetadata(),
     cards: createInitialDraftCards(),
     relics: createInitialDraftRelics(),
     enemies: createInitialDraftEnemies(),
     rewardPools: createInitialDraftRewardPools(),
+  };
+}
+
+export function createDefaultDraftRulesetMetadata(): DraftRulesetMetadata {
+  return {
+    manifestId: "editorDraftManifest",
+    rulesetId: "slay-like",
+    version: "0.1.0",
   };
 }
 
@@ -96,7 +121,7 @@ export function createInitialDraftCards(): readonly DraftCard[] {
       name: "Spark Strike",
       costText: "1",
       targetPolicy: "enemy",
-      tagsText: "attack, starter",
+      tagsText: "attack, starter, common",
       effects: [
         {
           id: "sparkStrikeDamage",
@@ -110,7 +135,7 @@ export function createInitialDraftCards(): readonly DraftCard[] {
       name: "Guard Pulse",
       costText: "1",
       targetPolicy: "none",
-      tagsText: "skill, starter",
+      tagsText: "skill, starter, common",
       effects: [
         {
           id: "guardPulseBlock",
@@ -183,7 +208,7 @@ export function createDraftCard(sequence: number): DraftCard {
     name: `Draft Card ${sequence}`,
     costText: "1",
     targetPolicy: "enemy",
-    tagsText: "attack",
+    tagsText: "attack, common",
     effects: [
       {
         id: `draftCard${sequence}Effect`,
@@ -290,6 +315,7 @@ export function createDraftEffect(sequence: number, type: DraftEffectKind = "Dea
 
 export function compileCardEditorDrafts(cards: readonly DraftCard[]): CardEditorCompilePreview {
   return compileEditorContent({
+    ruleset: createDefaultDraftRulesetMetadata(),
     cards,
     relics: [],
     enemies: [],
@@ -303,7 +329,114 @@ export function compileEditorContent(content: DraftEditorContent): CardEditorCom
   return {
     manifest,
     result: compileContentManifest(manifest),
+    balanceChecks: runStaticBalanceChecks(content),
   };
+}
+
+export function runStaticBalanceChecks(
+  input: DraftEditorContent | readonly DraftCard[],
+): readonly StaticBalanceCheck[] {
+  const content = normalizeEditorContent(input);
+  const checks: StaticBalanceCheck[] = [];
+  const cardIds = new Set(content.cards.map((card) => card.id.trim()).filter(Boolean));
+
+  for (const [index, card] of content.cards.entries()) {
+    const tags = splitTags(card.tagsText);
+    const cost = parseInteger(card.costText);
+
+    if (!hasRarityTag(tags)) {
+      checks.push({
+        severity: "warning",
+        code: "CARD_RARITY_MISSING",
+        path: `cards.${index}.tagsText`,
+        message: `Card ${card.id || index + 1} does not declare common, uncommon, or rare.`,
+      });
+    }
+
+    if (Number.isFinite(cost) && cost > 3) {
+      checks.push({
+        severity: "warning",
+        code: "CARD_COST_HIGH",
+        path: `cards.${index}.costText`,
+        message: `Card ${card.id || index + 1} costs ${cost}; Slay-like starter balance expects 0-3.`,
+      });
+    }
+
+    if (card.effects.length === 0) {
+      checks.push({
+        severity: "error",
+        code: "CARD_EFFECTS_EMPTY",
+        path: `cards.${index}.effects`,
+        message: `Card ${card.id || index + 1} has no effects for simulation to evaluate.`,
+      });
+    }
+
+    if (tags.includes("rare") && !tags.some((tag) => tag.startsWith("unlock:"))) {
+      checks.push({
+        severity: "warning",
+        code: "RARE_CARD_UNLOCK_MISSING",
+        path: `cards.${index}.tagsText`,
+        message: `Rare card ${card.id || index + 1} should declare an unlock:* tag.`,
+      });
+    }
+  }
+
+  const starterCount = content.cards.filter((card) =>
+    splitTags(card.tagsText).includes("starter"),
+  ).length;
+  if (starterCount === 0) {
+    checks.push({
+      severity: "warning",
+      code: "STARTER_DECK_EMPTY",
+      path: "cards",
+      message: "No cards are tagged starter, so Slay-like runtime content would start empty.",
+    });
+  }
+
+  for (const [poolIndex, rewardPool] of content.rewardPools.entries()) {
+    if (rewardPool.choices.length === 0) {
+      checks.push({
+        severity: "error",
+        code: "REWARD_POOL_EMPTY",
+        path: `rewardPools.${poolIndex}.choices`,
+        message: `Reward pool ${rewardPool.id || poolIndex + 1} has no choices.`,
+      });
+      continue;
+    }
+
+    const weights = rewardPool.choices.map((choice) => parseInteger(choice.weightText));
+    const totalWeight = weights
+      .filter((weight) => Number.isFinite(weight) && weight > 0)
+      .reduce((sum, weight) => sum + weight, 0);
+
+    for (const [choiceIndex, choice] of rewardPool.choices.entries()) {
+      if (!cardIds.has(choice.cardId.trim())) {
+        checks.push({
+          severity: "error",
+          code: "REWARD_CARD_MISSING",
+          path: `rewardPools.${poolIndex}.choices.${choiceIndex}.cardId`,
+          message: `Reward pool ${rewardPool.id || poolIndex + 1} references missing card ${choice.cardId}.`,
+        });
+      }
+
+      const weight = weights[choiceIndex] ?? Number.NaN;
+      if (
+        rewardPool.choices.length > 1 &&
+        Number.isFinite(weight) &&
+        totalWeight > 0 &&
+        weight / totalWeight > 0.75
+      ) {
+        checks.push({
+          severity: "warning",
+          code: "REWARD_WEIGHT_DOMINANT",
+          path: `rewardPools.${poolIndex}.choices.${choiceIndex}.weightText`,
+          message: `Reward ${choice.cardId || choiceIndex + 1} takes more than 75% of pool ${rewardPool.id || poolIndex + 1}.`,
+        });
+      }
+    }
+  }
+
+  return checks;
 }
 
 export function buildEditorManifest(
@@ -312,9 +445,9 @@ export function buildEditorManifest(
   const content = normalizeEditorContent(input);
 
   return {
-    manifestId: "editorDraftManifest",
-    rulesetId: "slay-like",
-    version: "0.1.0",
+    manifestId: content.ruleset.manifestId.trim(),
+    rulesetId: content.ruleset.rulesetId.trim(),
+    version: content.ruleset.version.trim(),
     resources: createSlayLikeResources(),
     zones: createSlayLikeZones(content),
     cards: content.cards.map((card) => ({
@@ -393,6 +526,7 @@ function normalizeEditorContent(
 ): DraftEditorContent {
   if (Array.isArray(input)) {
     return {
+      ruleset: createDefaultDraftRulesetMetadata(),
       cards: input as readonly DraftCard[],
       relics: [],
       enemies: [],
@@ -401,6 +535,10 @@ function normalizeEditorContent(
   }
 
   return input as DraftEditorContent;
+}
+
+function hasRarityTag(tags: readonly string[]): boolean {
+  return tags.includes("common") || tags.includes("uncommon") || tags.includes("rare");
 }
 
 function createSlayLikeResources(): ContentManifest["resources"] {

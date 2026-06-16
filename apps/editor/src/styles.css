@@ -131,6 +131,12 @@ button:disabled {
   grid-template-columns: minmax(320px, 0.58fr) minmax(420px, 1fr);
 }
 
+.ruleset-layout {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(340px, 0.8fr) minmax(360px, 1fr);
+}
+
 .editor-panel {
   background: #171b1a;
   border: 1px solid #303b38;
@@ -385,6 +391,64 @@ button:disabled {
   font-size: 0.82rem;
 }
 
+.static-check-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.static-check {
+  background: #1c1811;
+  border: 1px solid #66512a;
+  border-radius: 6px;
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+}
+
+.static-check-error {
+  background: #211415;
+  border-color: #6f3438;
+}
+
+.static-check-warning {
+  background: #1d1a12;
+  border-color: #6c5726;
+}
+
+.static-check strong {
+  color: #f0d88a;
+}
+
+.static-check-error strong {
+  color: #ffb9be;
+}
+
+.static-check span,
+.static-check p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.static-check span {
+  color: #d8c58a;
+  font-size: 0.82rem;
+}
+
+.static-check-empty {
+  background: #101514;
+  border: 1px solid #2a3632;
+  border-radius: 6px;
+  margin: 0 0 12px;
+  padding: 9px;
+}
+
+.ruleset-summary {
+  margin-top: 0;
+}
+
 .validation-panel textarea {
   font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
   min-height: 430px;
@@ -568,6 +632,7 @@ button:disabled {
 @media (max-width: 1080px) {
   .editor-layout,
   .balance-layout,
+  .ruleset-layout,
   .balance-metric-grid,
   .balance-rate-grid,
   .resource-curve-grid {

@@ -6,6 +6,7 @@ import {
   compileEditorContent,
   createInitialDraftContent,
   createInitialDraftCards,
+  runStaticBalanceChecks,
   type DraftCard,
 } from "./card-editor-model.js";
 
@@ -19,6 +20,7 @@ describe("card editor model", () => {
     }
 
     expect(preview.result.manifestHash).toMatch(/^ucre1-/);
+    expect(preview.balanceChecks).toEqual([]);
     const canonical = JSON.parse(preview.result.canonicalJson) as {
       readonly cards: readonly { readonly id: string }[];
     };
@@ -86,6 +88,73 @@ describe("card editor model", () => {
       "starterRewards",
     ]);
     expect(preview.result.manifestHash).toMatch(/^ucre1-/);
+    expect(preview.balanceChecks).toEqual([]);
+  });
+
+  it("keeps ruleset metadata editable in the manifest", () => {
+    const content = createInitialDraftContent();
+    const manifest = buildEditorManifest({
+      ...content,
+      ruleset: {
+        manifestId: "customManifest",
+        rulesetId: "slay-like",
+        version: "0.2.0",
+      },
+    });
+
+    expect(manifest).toMatchObject({
+      manifestId: "customManifest",
+      rulesetId: "slay-like",
+      version: "0.2.0",
+    });
+  });
+
+  it("reports static balance issues for costs, rarity, pools, and unlock tags", () => {
+    const content = createInitialDraftContent();
+    const [firstCard, secondCard] = content.cards;
+    const [rewardPool] = content.rewardPools;
+    if (!firstCard || !secondCard || !rewardPool) {
+      throw new Error("Default editor content is incomplete.");
+    }
+
+    const checks = runStaticBalanceChecks({
+      ...content,
+      cards: [
+        {
+          ...firstCard,
+          costText: "4",
+          tagsText: "attack",
+        },
+        {
+          ...secondCard,
+          tagsText: "rare",
+        },
+      ],
+      rewardPools: [
+        {
+          ...rewardPool,
+          choices: [
+            {
+              cardId: firstCard.id,
+              weightText: "10",
+            },
+            {
+              cardId: "missingCard",
+              weightText: "1",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(checks.map((check) => check.code)).toEqual([
+      "CARD_RARITY_MISSING",
+      "CARD_COST_HIGH",
+      "RARE_CARD_UNLOCK_MISSING",
+      "STARTER_DECK_EMPTY",
+      "REWARD_WEIGHT_DOMINANT",
+      "REWARD_CARD_MISSING",
+    ]);
   });
 
   it("surfaces duplicate relic and enemy IDs through the shared content compiler", () => {
