@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createInitialGameState } from "./contracts.js";
-import { moveObject } from "./effects.js";
+import { discard, drawCards, moveObject } from "./effects.js";
 import { createGameObject, createZone, putGameObjectInZone, putZone } from "./state.js";
 
 describe("MoveObject", () => {
@@ -94,6 +94,124 @@ describe("MoveObject", () => {
     }
 
     expect(result.errors[0]?.code).toBe("INVALID_MOVE_POSITION");
+  });
+});
+
+describe("DrawCards", () => {
+  it("moves cards from the source zone to the target zone in order", () => {
+    const state = createMoveState(["card-1", "card-2", "card-3"]);
+    const result = drawCards(state, {
+      fromZoneId: "draw",
+      toZoneId: "hand",
+      count: 2,
+      eventId: "draw-1",
+      causedByCommandId: "command-1",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("DrawCards unexpectedly failed.");
+    }
+
+    expect(result.state.zones.draw?.objectIds).toEqual(["card-3"]);
+    expect(result.state.zones.hand?.objectIds).toEqual(["card-1", "card-2"]);
+    expect(result.events.map((event) => event.type)).toEqual([
+      "ObjectMoved",
+      "ObjectMoved",
+      "CardsDrawn",
+    ]);
+    expect(result.events.at(-1)).toEqual({
+      id: "draw-1",
+      type: "CardsDrawn",
+      payload: {
+        fromZoneId: "draw",
+        toZoneId: "hand",
+        requestedCount: 2,
+        drawnCount: 2,
+        drawnObjectIds: ["card-1", "card-2"],
+      },
+      causedByCommandId: "command-1",
+    });
+    expect(result.presentationIntents.map((intent) => intent.type)).toEqual([
+      "MoveObject",
+      "MoveObject",
+      "DrawCards",
+    ]);
+  });
+
+  it("draws only available cards", () => {
+    const state = createMoveState(["card-1"]);
+    const result = drawCards(state, {
+      fromZoneId: "draw",
+      toZoneId: "hand",
+      count: 3,
+      eventId: "draw-1",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("DrawCards unexpectedly failed.");
+    }
+
+    expect(result.state.zones.draw?.objectIds).toEqual([]);
+    expect(result.state.zones.hand?.objectIds).toEqual(["card-1"]);
+    expect(result.events.at(-1)?.payload).toMatchObject({
+      requestedCount: 3,
+      drawnCount: 1,
+      drawnObjectIds: ["card-1"],
+    });
+  });
+
+  it("leaves state unchanged when a draw zone is missing", () => {
+    const state = createMoveState();
+    const result = drawCards(state, {
+      fromZoneId: "missing",
+      toZoneId: "hand",
+      count: 1,
+      eventId: "draw-1",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.state).toBe(state);
+  });
+});
+
+describe("Discard", () => {
+  it("moves a card to the discard zone and records discard facts", () => {
+    const state = createMoveState(["card-1"]);
+    const inHand = moveObject(state, {
+      objectId: "card-1",
+      toZoneId: "hand",
+      eventId: "move-1",
+    });
+
+    expect(inHand.ok).toBe(true);
+    if (!inHand.ok) {
+      throw new Error("MoveObject unexpectedly failed.");
+    }
+
+    const withDiscard = putZone(
+      inHand.state,
+      createZone({ id: "discard", kind: "discard", ownerId: "player-1" }),
+    );
+    const result = discard(withDiscard, {
+      objectId: "card-1",
+      toZoneId: "discard",
+      eventId: "discard-1",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("Discard unexpectedly failed.");
+    }
+
+    expect(result.state.zones.hand?.objectIds).toEqual([]);
+    expect(result.state.zones.discard?.objectIds).toEqual(["card-1"]);
+    expect(result.events.map((event) => event.type)).toEqual(["ObjectMoved", "CardDiscarded"]);
+    expect(result.presentationIntents.map((intent) => intent.type)).toEqual([
+      "MoveObject",
+      "Discard",
+    ]);
   });
 });
 

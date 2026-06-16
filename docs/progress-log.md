@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 1 - Deterministic Rules Core
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: implement `DrawCards` and `Discard` effects on top of `MoveObject`.
+- Next recommended round: implement resource, damage, and destroy effects.
 
 ## Round Template
 
@@ -61,5 +61,15 @@ Notes:
 - Files changed: `packages/core/src/state.ts`, `packages/core/src/effects.ts`, state/effect tests, `packages/core/src/index.ts`, `docs/adr/0002-move-object-effect.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and Phase 1 forbidden dependency/nondeterminism searches.
 - Result: passed after formatting `packages/core/src/effects.ts`.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `13916dd feat(core): implement move object effect`
 - Notes: `MoveObject` leaves state unchanged on missing objects, missing zones, or invalid positions, and it does not generate IDs from ambient state.
+
+### 2026-06-17 - Round P1R3
+
+- Phase: Phase 1 - Deterministic Rules Core
+- Deliverable: implemented `DrawCards` and `Discard` effects by composing the deterministic `MoveObject` path, with aggregate rule events and presentation intents.
+- Files changed: `packages/core/src/effects.ts`, `packages/core/src/effects.test.ts`, `docs/adr/0003-draw-discard-effects.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/core/src`, `corepack pnpm typecheck`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and Phase 1 forbidden dependency/nondeterminism searches.
+- Result: passed after fixing optional command/effect id forwarding under `exactOptionalPropertyTypes`.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: `DrawCards` draws available cards in source order and leaves reshuffle policy to rulesets; `Discard` emits both movement and discard facts.
