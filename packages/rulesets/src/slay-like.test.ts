@@ -3,11 +3,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   SLAY_LIKE_COMMANDS,
+  SLAY_LIKE_EVENTS,
   SLAY_LIKE_PHASES,
   SLAY_LIKE_RESOURCES,
   SLAY_LIKE_ZONES,
   createSlayLikeCommandRegistry,
   createSlayLikeEncounter,
+  executeSlayLikeCommand,
 } from "./slay-like.js";
 
 describe("slay-like encounter scaffold", () => {
@@ -165,5 +167,126 @@ describe("slay-like encounter scaffold", () => {
     }
 
     expect(play.errors[0]?.code).toBe("SLAY_TARGET_REQUIRED");
+  });
+
+  it("ends the player turn by resolving enemy intent and starting the next turn", () => {
+    const state = createSlayLikeEncounter({
+      gameId: "slay-1",
+      seed: "seed-1",
+    });
+    const draw = executeSlayLikeCommand({
+      state,
+      command: {
+        id: "command-1",
+        type: SLAY_LIKE_COMMANDS.drawCards,
+        playerId: "player-1",
+        payload: {
+          count: 5,
+        },
+      },
+    });
+
+    expect(draw.ok).toBe(true);
+    if (!draw.ok) {
+      throw new Error("Draw command unexpectedly failed.");
+    }
+
+    const playDefend = executeSlayLikeCommand({
+      state: draw.state,
+      command: {
+        id: "command-2",
+        type: SLAY_LIKE_COMMANDS.playCard,
+        playerId: "player-1",
+        payload: {
+          cardId: "defend-1",
+        },
+      },
+    });
+
+    expect(playDefend.ok).toBe(true);
+    if (!playDefend.ok) {
+      throw new Error("Defend command unexpectedly failed.");
+    }
+
+    expect(playDefend.state.resources["player-1"]?.values[SLAY_LIKE_RESOURCES.block]).toBe(5);
+
+    const endTurn = executeSlayLikeCommand({
+      state: playDefend.state,
+      command: {
+        id: "command-3",
+        type: SLAY_LIKE_COMMANDS.endTurn,
+        playerId: "player-1",
+        payload: {},
+      },
+    });
+
+    expect(endTurn.ok).toBe(true);
+    if (!endTurn.ok) {
+      throw new Error("End turn command unexpectedly failed.");
+    }
+
+    const intentEvent = endTurn.events.find(
+      (event) => event.type === SLAY_LIKE_EVENTS.enemyIntentResolved,
+    );
+    expect(intentEvent?.payload).toMatchObject({
+      playerId: "player-1",
+      totalDamage: 6,
+      blockedAmount: 5,
+      hitPointLoss: 1,
+      previousHitPoints: 80,
+      nextHitPoints: 79,
+    });
+
+    const turnStartedEvent = endTurn.events.find(
+      (event) => event.type === SLAY_LIKE_EVENTS.playerTurnStarted,
+    );
+    expect(turnStartedEvent?.payload).toMatchObject({
+      playerId: "player-1",
+      previousPhase: SLAY_LIKE_PHASES.enemyTurn,
+      nextPhase: SLAY_LIKE_PHASES.playerTurn,
+      previousTurn: 0,
+      nextTurn: 1,
+      nextEnergy: 3,
+      nextBlock: 0,
+    });
+    expect(endTurn.state.phase).toBe(SLAY_LIKE_PHASES.playerTurn);
+    expect(endTurn.state.turn).toBe(1);
+    expect(endTurn.state.resources["player-1"]?.values[SLAY_LIKE_RESOURCES.energy]).toBe(3);
+    expect(endTurn.state.resources["player-1"]?.values[SLAY_LIKE_RESOURCES.block]).toBe(0);
+    expect(endTurn.state.resources["player-1"]?.values[SLAY_LIKE_RESOURCES.playerHp]).toBe(79);
+    expect(endTurn.state.zones[SLAY_LIKE_ZONES.hand]?.objectIds).toEqual([]);
+    expect(endTurn.state.zones[SLAY_LIKE_ZONES.discardPile]?.objectIds).toEqual([
+      "defend-1",
+      "strike-1",
+      "strike-2",
+      "strike-3",
+      "defend-2",
+    ]);
+  });
+
+  it("rejects ending the turn outside the player turn", () => {
+    const state = {
+      ...createSlayLikeEncounter({
+        gameId: "slay-1",
+        seed: "seed-1",
+      }),
+      phase: SLAY_LIKE_PHASES.enemyTurn,
+    };
+    const result = executeSlayLikeCommand({
+      state,
+      command: {
+        id: "command-1",
+        type: SLAY_LIKE_COMMANDS.endTurn,
+        playerId: "player-1",
+        payload: {},
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("End turn command unexpectedly succeeded.");
+    }
+
+    expect(result.errors[0]?.code).toBe("SLAY_NOT_PLAYER_TURN");
   });
 });

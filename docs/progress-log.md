@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 2 - First Ruleset Vertical Slice
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: implement enemy intent resolution and end-turn flow.
+- Next recommended round: add encounter completion, reward draft choices, and deck modification.
 
 ## Round Template
 
@@ -131,5 +131,15 @@ Notes:
 - Files changed: `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, `docs/adr/0009-slay-like-card-enemy-commands.md`, and this progress log.
 - Validation: `corepack pnpm test -- packages/rulesets/src packages/core/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across `packages/core` and `packages/rulesets`.
 - Result: passed after fixing ruleset effect array type inference and formatting.
-- Commit: pending before commit; record hash in the next round opening maintenance.
+- Commit: `61c7c7d feat(rulesets): add slay like card play`
 - Notes: `slay.playCard` validates phase, hand membership, energy, and target requirements before resolving through core effects.
+
+### 2026-06-17 - Round P2R3
+
+- Phase: Phase 2 - First Ruleset Vertical Slice
+- Deliverable: added deterministic `slay.endTurn` flow, Slay-like enemy intent resolution, next-turn reset/draw, and the ruleset command/effect helper.
+- Files changed: `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, `docs/adr/0010-slay-like-turn-effects.md`, and this progress log.
+- Validation: `corepack pnpm test -- packages/rulesets/src packages/core/src`, `corepack pnpm typecheck`, `corepack pnpm format:check`, `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`, and forbidden dependency/nondeterminism searches across `packages/core` and `packages/rulesets`.
+- Result: passed after tightening custom Slay-like effect payload failures to return `INVALID_EFFECT_PAYLOAD` instead of throwing.
+- Commit: pending before commit; record hash in the next round opening maintenance.
+- Notes: `slay.endTurn` discards the hand, resolves living enemy intents against player block/HP, advances through enemy turn, resets energy/block, starts the next player turn, and draws the next hand through command dispatch.

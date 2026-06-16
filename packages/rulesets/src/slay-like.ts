@@ -5,13 +5,27 @@ import {
   GAIN_RESOURCE_EFFECT_TYPE,
   MOVE_OBJECT_EFFECT_TYPE,
   SPEND_RESOURCE_EFFECT_TYPE,
+  createCoreEffectRegistry,
   createGameObject,
   createInitialGameState,
   createZone,
+  executeCommand,
   putGameObjectInZone,
   putZone,
 } from "@ucre/core";
-import type { Command, CommandRegistry, Effect, GameObject, GameState, PlayerId } from "@ucre/core";
+import type {
+  Command,
+  CommandRegistry,
+  Effect,
+  EffectRegistry,
+  GameObject,
+  GameState,
+  JsonObject,
+  PlayerId,
+  RuleError,
+  RuleEvent,
+  RuleResult,
+} from "@ucre/core";
 
 export const SLAY_LIKE_RULESET_ID = "slay-like";
 export const SLAY_LIKE_RULES_VERSION = "slay-like-0";
@@ -40,9 +54,23 @@ export const SLAY_LIKE_RESOURCES = {
   block: "block",
 } as const;
 
+export const SLAY_LIKE_TURN_ENERGY = 3;
+export const SLAY_LIKE_HAND_DRAW_COUNT = 5;
+
 export const SLAY_LIKE_COMMANDS = {
   drawCards: "slay.drawCards",
   playCard: "slay.playCard",
+  endTurn: "slay.endTurn",
+} as const;
+
+export const SLAY_LIKE_EFFECTS = {
+  resolveEnemyIntent: "SlayResolveEnemyIntent",
+  startPlayerTurn: "SlayStartPlayerTurn",
+} as const;
+
+export const SLAY_LIKE_EVENTS = {
+  enemyIntentResolved: "SlayEnemyIntentResolved",
+  playerTurnStarted: "SlayPlayerTurnStarted",
 } as const;
 
 export interface SlayLikeCardDefinition {
@@ -258,7 +286,73 @@ export function createSlayLikeCommandRegistry(): CommandRegistry {
         return effects;
       },
     },
+    [SLAY_LIKE_COMMANDS.endTurn]: {
+      validate: (state, command) => validateEndTurnCommand(state, command),
+      getEffects: (state, command) => {
+        const handObjectIds = state.zones[SLAY_LIKE_ZONES.hand]?.objectIds ?? [];
+        const discardHandEffects: Effect[] = handObjectIds.map((objectId, index) => ({
+          id: `discard-hand-${index}`,
+          type: DISCARD_EFFECT_TYPE,
+          payload: {
+            objectId,
+            toZoneId: SLAY_LIKE_ZONES.discardPile,
+          },
+        }));
+
+        return [
+          ...discardHandEffects,
+          {
+            id: "resolve-enemy-intent",
+            type: SLAY_LIKE_EFFECTS.resolveEnemyIntent,
+            payload: {
+              playerId: command.playerId,
+            },
+          },
+          {
+            id: "start-next-player-turn",
+            type: SLAY_LIKE_EFFECTS.startPlayerTurn,
+            payload: {
+              playerId: command.playerId,
+              energy: SLAY_LIKE_TURN_ENERGY,
+            },
+          },
+          {
+            id: "draw-next-hand",
+            type: DRAW_CARDS_EFFECT_TYPE,
+            payload: {
+              fromZoneId: SLAY_LIKE_ZONES.drawPile,
+              toZoneId: SLAY_LIKE_ZONES.hand,
+              count: SLAY_LIKE_HAND_DRAW_COUNT,
+            },
+          },
+        ];
+      },
+    },
   };
+}
+
+export function createSlayLikeEffectRegistry(): EffectRegistry {
+  return {
+    ...createCoreEffectRegistry(),
+    [SLAY_LIKE_EFFECTS.resolveEnemyIntent]: (state, effect, context) =>
+      resolveEnemyIntent(state, effect, context.commandId),
+    [SLAY_LIKE_EFFECTS.startPlayerTurn]: (state, effect, context) =>
+      startPlayerTurn(state, effect, context.commandId),
+  };
+}
+
+export interface ExecuteSlayLikeCommandInput {
+  readonly state: GameState;
+  readonly command: Command;
+}
+
+export function executeSlayLikeCommand(input: ExecuteSlayLikeCommandInput): RuleResult {
+  return executeCommand({
+    state: input.state,
+    command: input.command,
+    commandRegistry: createSlayLikeCommandRegistry(),
+    effectRegistry: createSlayLikeEffectRegistry(),
+  });
 }
 
 export function createDefaultStarterDeck(): readonly SlayLikeStarterCard[] {
@@ -314,7 +408,7 @@ function createEnemyObject(enemy: SlayLikeEnemyDefinition): GameObject {
 }
 
 function validatePlayCardCommand(state: GameState, command: Command) {
-  const errors = [];
+  const errors: RuleError[] = [];
 
   if (state.phase !== SLAY_LIKE_PHASES.playerTurn) {
     errors.push({
@@ -397,6 +491,274 @@ function validatePlayCardCommand(state: GameState, command: Command) {
   }
 
   return errors;
+}
+
+function validateEndTurnCommand(state: GameState, command: Command): readonly RuleError[] {
+  const errors: RuleError[] = [];
+
+  if (state.phase !== SLAY_LIKE_PHASES.playerTurn) {
+    errors.push({
+      code: "SLAY_NOT_PLAYER_TURN",
+      message: "Turn can only end during the player turn.",
+      details: {
+        commandId: command.id,
+        phase: state.phase,
+      },
+    });
+  }
+
+  for (const zoneId of [
+    SLAY_LIKE_ZONES.hand,
+    SLAY_LIKE_ZONES.discardPile,
+    SLAY_LIKE_ZONES.drawPile,
+    SLAY_LIKE_ZONES.enemy,
+  ]) {
+    if (!state.zones[zoneId]) {
+      errors.push({
+        code: "SLAY_ZONE_NOT_FOUND",
+        message: `Required Slay-like zone ${zoneId} does not exist.`,
+        details: {
+          commandId: command.id,
+          zoneId,
+        },
+      });
+    }
+  }
+
+  return errors;
+}
+
+function resolveEnemyIntent(
+  state: GameState,
+  effect: Effect,
+  commandId: Command["id"] | undefined,
+): RuleResult {
+  let playerId: string;
+  try {
+    playerId = readEffectString(effect, "playerId");
+  } catch (error) {
+    return invalidEffectPayload(state, effect, error);
+  }
+
+  const enemyZone = state.zones[SLAY_LIKE_ZONES.enemy];
+
+  if (!enemyZone) {
+    return failure(state, {
+      code: "SLAY_ZONE_NOT_FOUND",
+      message: `Required Slay-like zone ${SLAY_LIKE_ZONES.enemy} does not exist.`,
+      details: {
+        effectId: effect.id,
+        zoneId: SLAY_LIKE_ZONES.enemy,
+      },
+    });
+  }
+
+  const enemyIntents: JsonObject[] = [];
+  let totalDamage = 0;
+
+  for (const enemyObjectId of enemyZone.objectIds) {
+    const enemy = state.objects[enemyObjectId];
+    if (!enemy) {
+      return failure(state, {
+        code: "SLAY_ENEMY_NOT_FOUND",
+        message: `Enemy object ${enemyObjectId} does not exist.`,
+        details: {
+          effectId: effect.id,
+          enemyObjectId,
+        },
+      });
+    }
+
+    const hp = readNumberAttribute(enemy, "hp") ?? 0;
+    if (hp <= 0) {
+      continue;
+    }
+
+    const intentDamage = readNumberAttribute(enemy, "intentDamage") ?? 0;
+    enemyIntents.push({
+      enemyObjectId,
+      intentDamage,
+    });
+    totalDamage += intentDamage;
+  }
+
+  const currentResourceState = state.resources[playerId] ?? {
+    playerId,
+    values: {},
+  };
+  const previousBlock = currentResourceState.values[SLAY_LIKE_RESOURCES.block] ?? 0;
+  const previousHitPoints = currentResourceState.values[SLAY_LIKE_RESOURCES.playerHp] ?? 0;
+  const blockedAmount = Math.min(previousBlock, totalDamage);
+  const hitPointLoss = totalDamage - blockedAmount;
+  const nextBlock = previousBlock - blockedAmount;
+  const nextHitPoints = Math.max(0, previousHitPoints - hitPointLoss);
+  const nextState: GameState = {
+    ...state,
+    phase: SLAY_LIKE_PHASES.enemyTurn,
+    resources: {
+      ...state.resources,
+      [playerId]: {
+        ...currentResourceState,
+        values: {
+          ...currentResourceState.values,
+          [SLAY_LIKE_RESOURCES.block]: nextBlock,
+          [SLAY_LIKE_RESOURCES.playerHp]: nextHitPoints,
+        },
+      },
+    },
+  };
+  const event: RuleEvent = {
+    id: eventIdFor(commandId, effect),
+    type: SLAY_LIKE_EVENTS.enemyIntentResolved,
+    payload: {
+      playerId,
+      previousPhase: state.phase,
+      nextPhase: SLAY_LIKE_PHASES.enemyTurn,
+      enemyIntents,
+      totalDamage,
+      blockedAmount,
+      hitPointLoss,
+      previousBlock,
+      nextBlock,
+      previousHitPoints,
+      nextHitPoints,
+    },
+    ...eventCause(commandId, effect),
+  };
+
+  return singleEventSuccess(nextState, event);
+}
+
+function startPlayerTurn(
+  state: GameState,
+  effect: Effect,
+  commandId: Command["id"] | undefined,
+): RuleResult {
+  let playerId: string;
+  let nextEnergy: number;
+  try {
+    playerId = readEffectString(effect, "playerId");
+    nextEnergy = readEffectNumber(effect, "energy");
+  } catch (error) {
+    return invalidEffectPayload(state, effect, error);
+  }
+
+  const currentResourceState = state.resources[playerId] ?? {
+    playerId,
+    values: {},
+  };
+  const previousEnergy = currentResourceState.values[SLAY_LIKE_RESOURCES.energy] ?? 0;
+  const previousBlock = currentResourceState.values[SLAY_LIKE_RESOURCES.block] ?? 0;
+  const nextTurn = state.turn + 1;
+  const nextState: GameState = {
+    ...state,
+    phase: SLAY_LIKE_PHASES.playerTurn,
+    turn: nextTurn,
+    activePlayerId: playerId,
+    resources: {
+      ...state.resources,
+      [playerId]: {
+        ...currentResourceState,
+        values: {
+          ...currentResourceState.values,
+          [SLAY_LIKE_RESOURCES.energy]: nextEnergy,
+          [SLAY_LIKE_RESOURCES.block]: 0,
+        },
+      },
+    },
+  };
+  const event: RuleEvent = {
+    id: eventIdFor(commandId, effect),
+    type: SLAY_LIKE_EVENTS.playerTurnStarted,
+    payload: {
+      playerId,
+      previousPhase: state.phase,
+      nextPhase: SLAY_LIKE_PHASES.playerTurn,
+      previousTurn: state.turn,
+      nextTurn,
+      previousEnergy,
+      nextEnergy,
+      previousBlock,
+      nextBlock: 0,
+    },
+    ...eventCause(commandId, effect),
+  };
+
+  return singleEventSuccess(nextState, event);
+}
+
+function failure(state: GameState, error: RuleError): RuleResult {
+  return {
+    ok: false,
+    state,
+    errors: [error],
+    events: [],
+    presentationIntents: [],
+  };
+}
+
+function invalidEffectPayload(state: GameState, effect: Effect, error: unknown): RuleResult {
+  return failure(state, {
+    code: "INVALID_EFFECT_PAYLOAD",
+    message: error instanceof Error ? error.message : "Invalid Slay-like effect payload.",
+    details: {
+      effectId: effect.id,
+      effectType: effect.type,
+    },
+  });
+}
+
+function singleEventSuccess(state: GameState, event: RuleEvent): RuleResult {
+  return {
+    ok: true,
+    state,
+    events: [event],
+    presentationIntents: [
+      {
+        id: `${event.id}:presentation`,
+        type: event.type,
+        eventId: event.id,
+        payload: event.payload,
+      },
+    ],
+  };
+}
+
+function eventIdFor(commandId: Command["id"] | undefined, effect: Effect): string {
+  return commandId ? `${commandId}:${effect.id}` : effect.id;
+}
+
+function eventCause(commandId: Command["id"] | undefined, effect: Effect) {
+  return {
+    ...(commandId ? { causedByCommandId: commandId } : {}),
+    causedByEffectId: effect.id,
+  };
+}
+
+function readNumberAttribute(object: GameObject, attribute: string): number | undefined {
+  const value = object.attributes[attribute];
+
+  return typeof value === "number" ? value : undefined;
+}
+
+function readEffectString(effect: Effect, key: string): string {
+  const value = effect.payload[key];
+
+  if (typeof value !== "string") {
+    throw new Error(`Expected effect payload key ${key} to be a string.`);
+  }
+
+  return value;
+}
+
+function readEffectNumber(effect: Effect, key: string): number {
+  const value = effect.payload[key];
+
+  if (typeof value !== "number") {
+    throw new Error(`Expected effect payload key ${key} to be a number.`);
+  }
+
+  return value;
 }
 
 function readCommandString(command: Command, key: string): string {
