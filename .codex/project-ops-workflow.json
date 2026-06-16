@@ -1,0 +1,98 @@
+﻿{
+    "schemaVersion":  1,
+    "initializedMarker":  "codex-project-ops-workflow: initialized",
+    "initializedAt":  "2026-06-17 00:14:10 +08:00",
+    "projectName":  "UCRE",
+    "repoRoot":  "D:/LabProjects/UCRE",
+    "validateSequence":  [
+                             "lint",
+                             "typecheck",
+                             "build",
+                             "test",
+                             "structureCheck",
+                             "docsCheck"
+                         ],
+    "operations":  {
+                       "envCheck":  {
+                                        "commands":  [
+
+                                                     ]
+                                    },
+                       "restoreDeps":  {
+                                           "commands":  [
+
+                                                        ]
+                                       },
+                       "installDeps":  {
+                                           "commands":  [
+
+                                                        ]
+                                       },
+                       "build":  {
+                                     "commands":  [
+
+                                                  ]
+                                 },
+                       "test":  {
+                                    "commands":  [
+
+                                                 ]
+                                },
+                       "lint":  {
+                                    "commands":  [
+
+                                                 ]
+                                },
+                       "format":  {
+                                      "commands":  [
+
+                                                   ]
+                                  },
+                       "typecheck":  {
+                                         "commands":  [
+
+                                                      ]
+                                     },
+                       "structureCheck":  {
+                                              "commands":  [
+
+                                                           ]
+                                          },
+                       "codegen":  {
+                                       "commands":  [
+
+                                                    ]
+                                   },
+                       "docsCheck":  {
+                                         "commands":  [
+
+                                                      ]
+                                     },
+                       "smoke":  {
+                                     "urls":  [
+
+                                              ],
+                                     "commands":  [
+
+                                                  ]
+                                 },
+                       "package":  {
+                                       "commands":  [
+
+                                                    ]
+                                   },
+                       "releaseDryRun":  {
+                                             "commands":  [
+
+                                                          ]
+                                         }
+                   },
+    "devServer":  {
+                      "startCommand":  "",
+                      "healthUrl":  "",
+                      "readyText":  "",
+                      "startupTimeoutSeconds":  30,
+                      "pidFile":  ".codex/project-ops-devserver.pid"
+                  },
+    "forbiddenPolicy":  "Do not run destructive clean/reset/deploy commands unless the user explicitly asks."
+}
