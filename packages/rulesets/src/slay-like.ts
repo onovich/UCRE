@@ -253,6 +253,62 @@ export const SLAY_LIKE_CARD_DEFINITIONS: Readonly<Record<string, SlayLikeCardDef
     requiresTarget: false,
     block: 3,
   },
+  cleave: {
+    id: "cleave",
+    name: "Cleave",
+    cost: 1,
+    requiresTarget: true,
+    damage: 5,
+  },
+  twinStrike: {
+    id: "twinStrike",
+    name: "Twin Strike",
+    cost: 1,
+    requiresTarget: true,
+    damage: 5,
+  },
+  uppercut: {
+    id: "uppercut",
+    name: "Uppercut",
+    cost: 2,
+    requiresTarget: true,
+    damage: 13,
+  },
+  clothesline: {
+    id: "clothesline",
+    name: "Clothesline",
+    cost: 2,
+    requiresTarget: true,
+    damage: 12,
+  },
+  thunderClap: {
+    id: "thunderClap",
+    name: "Thunder Clap",
+    cost: 1,
+    requiresTarget: true,
+    damage: 4,
+  },
+  secondWind: {
+    id: "secondWind",
+    name: "Second Wind",
+    cost: 1,
+    requiresTarget: false,
+    block: 8,
+  },
+  flameBarrier: {
+    id: "flameBarrier",
+    name: "Flame Barrier",
+    cost: 2,
+    requiresTarget: false,
+    block: 16,
+  },
+  sentinelGuard: {
+    id: "sentinelGuard",
+    name: "Sentinel Guard",
+    cost: 1,
+    requiresTarget: false,
+    block: 7,
+  },
 };
 
 export const SLAY_LIKE_ENEMY_DEFINITIONS: Readonly<Record<string, SlayLikeEnemyDefinition>> = {
@@ -272,6 +328,30 @@ export const SLAY_LIKE_ENEMY_DEFINITIONS: Readonly<Record<string, SlayLikeEnemyD
     block: 0,
     intentDamage: 5,
   },
+  cultist: {
+    id: "cultist",
+    objectId: "enemy-cultist",
+    name: "Cultist",
+    hp: 18,
+    block: 0,
+    intentDamage: 6,
+  },
+  sentry: {
+    id: "sentry",
+    objectId: "enemy-sentry",
+    name: "Sentry",
+    hp: 20,
+    block: 2,
+    intentDamage: 7,
+  },
+  hexaghost: {
+    id: "hexaghost",
+    objectId: "enemy-hexaghost",
+    name: "Hexaghost",
+    hp: 50,
+    block: 0,
+    intentDamage: 10,
+  },
 };
 
 export const SLAY_LIKE_RELIC_DEFINITIONS: Readonly<Record<string, SlayLikeRelicDefinition>> = {
@@ -280,6 +360,30 @@ export const SLAY_LIKE_RELIC_DEFINITIONS: Readonly<Record<string, SlayLikeRelicD
     objectId: "relic-burning-blood",
     name: "Burning Blood",
     description: "Starter relic placeholder for encounter-completion healing rules.",
+  },
+  vajra: {
+    id: "vajra",
+    objectId: "relic-vajra",
+    name: "Vajra",
+    description: "Demo relic placeholder for strength-forward attack builds.",
+  },
+  anchor: {
+    id: "anchor",
+    objectId: "relic-anchor",
+    name: "Anchor",
+    description: "Demo relic placeholder for opening-turn block rules.",
+  },
+  lantern: {
+    id: "lantern",
+    objectId: "relic-lantern",
+    name: "Lantern",
+    description: "Demo relic placeholder for opening energy rules.",
+  },
+  courier: {
+    id: "courier",
+    objectId: "relic-courier",
+    name: "Courier",
+    description: "Demo relic placeholder for shop and reward tuning.",
   },
 };
 

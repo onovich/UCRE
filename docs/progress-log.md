@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 10 - Vertical Demo And Desktop Build
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: expand vertical demo content set.
+- Next recommended round: wire expanded catalog into a full short run with boss node.
 
 ## Round Template
 
@@ -561,5 +561,15 @@ Notes:
 - Files changed: `apps/editor/src/App.tsx`, `apps/editor/src/card-editor-model.ts`, `apps/editor/src/card-editor-model.test.ts`, `apps/editor/src/content-round-trip.test.ts`, `apps/editor/src/styles.css`, and this progress log.
 - Validation: `corepack pnpm test apps/editor/src/card-editor-model.test.ts apps/editor/src/content-round-trip.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/editor build`, Playwright editor smoke on `http://127.0.0.1:5175` for ruleset metadata editing, static check display in Content and Ruleset workspaces, clean console, and 390px mobile overflow, Phase 9 architecture searches for browser-safe editor imports, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after updating the legacy card-only compile adapter to provide default ruleset metadata and accounting for the expected starter-deck warning in static-check tests.
-- Commit: pending.
+- Commit: `cda1023 feat(editor): add static balance checks`
 - Notes: Phase 9 exit gate is locally satisfied: editor-authored content can round-trip into Slay-like runtime and replay, the simulation CLI emits stable fixed-seed output and metrics, and the editor includes balance dashboard plus static authoring checks without crossing package boundaries.
+
+### 2026-06-17 - Round P10R1
+
+- Phase: Phase 10 - Vertical Demo And Desktop Build
+- Deliverable: expanded the Slay-like vertical demo catalog to 20 card definitions, 5 relic definitions, 5 enemy definitions, and a Hexaghost boss entry while keeping the default starter encounter and golden replay stable.
+- Files changed: `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, and this progress log.
+- Validation: `corepack pnpm test packages/rulesets/src/slay-like.test.ts packages/rulesets/src/slay-like-replay.test.ts`, `corepack pnpm --filter @ucre/rulesets build`, `corepack pnpm --filter @ucre/game build`, Phase 10 architecture searches confirming the catalog expansion stayed inside rulesets and avoided nondeterministic/browser/presentation leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed.
+- Commit: pending.
+- Notes: The catalog now satisfies the Phase 10 quantity target for cards, relics, enemies, and boss content; the next round should wire these into a full short run path.

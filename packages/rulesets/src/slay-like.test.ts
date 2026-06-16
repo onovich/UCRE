@@ -62,10 +62,27 @@ describe("slay-like encounter scaffold", () => {
     ]);
   });
 
-  it("defines the Phase 2 sample cards, enemies, and starter relic", () => {
-    expect(Object.keys(SLAY_LIKE_CARD_DEFINITIONS)).toHaveLength(12);
-    expect(Object.keys(SLAY_LIKE_ENEMY_DEFINITIONS).sort()).toEqual(["acidSlime", "jawWorm"]);
-    expect(Object.keys(SLAY_LIKE_RELIC_DEFINITIONS)).toEqual(["burningBlood"]);
+  it("defines the Phase 10 demo card, enemy, relic, and boss catalog", () => {
+    expect(Object.keys(SLAY_LIKE_CARD_DEFINITIONS)).toHaveLength(20);
+    expect(Object.keys(SLAY_LIKE_ENEMY_DEFINITIONS).sort()).toEqual([
+      "acidSlime",
+      "cultist",
+      "hexaghost",
+      "jawWorm",
+      "sentry",
+    ]);
+    expect(Object.keys(SLAY_LIKE_RELIC_DEFINITIONS).sort()).toEqual([
+      "anchor",
+      "burningBlood",
+      "courier",
+      "lantern",
+      "vajra",
+    ]);
+    expect(SLAY_LIKE_ENEMY_DEFINITIONS.hexaghost).toMatchObject({
+      objectId: "enemy-hexaghost",
+      hp: 50,
+      intentDamage: 10,
+    });
   });
 
   it("loads compiled Slay-like content into the command flow", () => {
