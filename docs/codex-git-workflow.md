@@ -41,7 +41,10 @@ git -c safe.directory=D:/LabProjects/UCRE status --short --branch
 
 Run these before commit or push, in order:
 
-No validation commands were configured. Ask before committing or pushing if validation matters for this repo.
+```
+powershell
+C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd
+```
 ## Staging Policy
 
 ask each time

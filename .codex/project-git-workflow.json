@@ -7,7 +7,7 @@
     "safeDirectory":  "D:/LabProjects/UCRE",
     "statusCommand":  "git -c safe.directory=D:/LabProjects/UCRE status --short --branch",
     "validationCommands":  [
-
+                               "C:\\Users\\Administrator\\.codex\\skills\\project-ops-workflow\\scripts\\ops\\Validate.cmd"
                            ],
     "stagingPolicy":  "ask each time",
     "commitCommand":  "",

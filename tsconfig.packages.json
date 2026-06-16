@@ -1,0 +1,26 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/core"
+    },
+    {
+      "path": "./packages/content-schema"
+    },
+    {
+      "path": "./packages/content-compiler"
+    },
+    {
+      "path": "./packages/replay"
+    },
+    {
+      "path": "./packages/presentation-core"
+    },
+    {
+      "path": "./packages/theater-three"
+    },
+    {
+      "path": "./packages/rulesets"
+    }
+  ]
+}

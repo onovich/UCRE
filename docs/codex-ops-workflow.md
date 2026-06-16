@@ -36,7 +36,20 @@ C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\ReleaseDry
 
 ## Validate Sequence
 
-lint, typecheck, build, test, structureCheck, docsCheck
+format, lint, typecheck, test, build, structureCheck, docsCheck
+
+## Configured Commands
+
+- Env check: `node --version`, `corepack --version`
+- Install dependencies: `corepack pnpm install`
+- Restore dependencies: `corepack pnpm install --frozen-lockfile`
+- Format check: `corepack pnpm format:check`
+- Lint: `corepack pnpm lint`
+- Typecheck: `corepack pnpm typecheck`
+- Test: `corepack pnpm test`
+- Build: `corepack pnpm build`
+- Structure check: `corepack pnpm structure:check`
+- Docs check: `corepack pnpm docs:check`
 
 ## Dev Server
 

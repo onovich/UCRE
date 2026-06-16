@@ -5,57 +5,59 @@
     "projectName":  "UCRE",
     "repoRoot":  "D:/LabProjects/UCRE",
     "validateSequence":  [
+                             "format",
                              "lint",
                              "typecheck",
-                             "build",
                              "test",
+                             "build",
                              "structureCheck",
                              "docsCheck"
                          ],
     "operations":  {
                        "envCheck":  {
                                         "commands":  [
-
+                                                         "node --version",
+                                                         "corepack --version"
                                                      ]
                                     },
                        "restoreDeps":  {
                                            "commands":  [
-
+                                                            "corepack pnpm install --frozen-lockfile"
                                                         ]
                                        },
                        "installDeps":  {
                                            "commands":  [
-
+                                                            "corepack pnpm install"
                                                         ]
                                        },
                        "build":  {
                                      "commands":  [
-
+                                                      "corepack pnpm build"
                                                   ]
                                  },
                        "test":  {
                                     "commands":  [
-
+                                                     "corepack pnpm test"
                                                  ]
                                 },
                        "lint":  {
                                     "commands":  [
-
+                                                     "corepack pnpm lint"
                                                  ]
                                 },
                        "format":  {
                                       "commands":  [
-
+                                                       "corepack pnpm format:check"
                                                    ]
                                   },
                        "typecheck":  {
                                          "commands":  [
-
+                                                          "corepack pnpm typecheck"
                                                       ]
                                      },
                        "structureCheck":  {
                                               "commands":  [
-
+                                                               "corepack pnpm structure:check"
                                                            ]
                                           },
                        "codegen":  {
@@ -65,7 +67,7 @@
                                    },
                        "docsCheck":  {
                                          "commands":  [
-
+                                                          "corepack pnpm docs:check"
                                                       ]
                                      },
                        "smoke":  {
