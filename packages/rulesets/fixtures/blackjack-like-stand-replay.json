@@ -1,0 +1,28 @@
+{
+  "input": {
+    "gameId": "blackjack-like-stand-replay",
+    "seed": "seed-blackjack-like-1",
+    "rulesVersion": "blackjack-like-0",
+    "contentManifestHash": "blackjack-like-inline-content-0",
+    "commands": [
+      {
+        "id": "command-1",
+        "type": "blackjack.dealInitial",
+        "playerId": "player-1",
+        "payload": {}
+      },
+      {
+        "id": "command-2",
+        "type": "blackjack.stand",
+        "playerId": "player-1",
+        "payload": {}
+      }
+    ]
+  },
+  "expected": {
+    "commandHash": "ucre1-0e51d89e",
+    "stateHash": "ucre1-0ae90734",
+    "eventHash": "ucre1-48a826e2",
+    "replayHash": "ucre1-2a37e8ec"
+  }
+}

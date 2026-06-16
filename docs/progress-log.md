@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 8 - Ruleset Pressure Tests
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add blackjack-like replay fixture.
+- Next recommended round: add sacrifice-board topology and slots.
 
 ## Round Template
 
@@ -441,5 +441,15 @@ Notes:
 - Files changed: `packages/rulesets/src/blackjack-like.ts`, `packages/rulesets/src/blackjack-like.test.ts`, `docs/adr/0035-blackjack-like-command-flow.md`, and this progress log.
 - Validation: `corepack pnpm test packages/rulesets/src/blackjack-like.test.ts`, `corepack pnpm --filter @ucre/rulesets build`, `corepack pnpm lint`, Phase 8 architecture searches for nondeterminism, browser/presentation imports, and blackjack leakage outside rulesets, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after changing one local presentation intent accumulator to a mutable `PresentationIntent[]` and removing unused command parameters caught by lint.
-- Commit: pending.
+- Commit: `f7d2c27 feat(rulesets): add blackjack command flow`
 - Notes: Blackjack-like behavior now runs through the same core command/effect pipeline as Slay-like, with core `MoveObject` handling card motion and ruleset-only effects handling phase, hand value, dealer policy, and settlement.
+
+### 2026-06-17 - Round P8R3
+
+- Phase: Phase 8 - Ruleset Pressure Tests
+- Deliverable: added a blackjack-like golden replay fixture for initial deal and stand/dealer policy settlement, locking command, state, event, and replay hashes.
+- Files changed: `packages/rulesets/fixtures/blackjack-like-stand-replay.json`, `packages/rulesets/src/blackjack-like-replay.test.ts`, and this progress log.
+- Validation: `corepack pnpm test packages/rulesets/src/blackjack-like-replay.test.ts`, `corepack pnpm --filter @ucre/rulesets build`, Phase 8 architecture searches for nondeterminism, browser/presentation imports, and blackjack leakage outside rulesets, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after formatting the new replay test.
+- Commit: pending.
+- Notes: Blackjack-like now has its first replay/hash contract beside the Slay-like golden replay, proving the second active ruleset runs through the shared replay model.
