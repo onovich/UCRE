@@ -20,6 +20,9 @@
       "path": "./packages/run-dexie"
     },
     {
+      "path": "./packages/sim"
+    },
+    {
       "path": "./packages/presentation-core"
     },
     {

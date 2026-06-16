@@ -14,6 +14,7 @@ const requiredPaths = [
   "packages/replay",
   "packages/run",
   "packages/run-dexie",
+  "packages/sim",
   "packages/presentation-core",
   "packages/theater-three",
   "packages/rulesets",

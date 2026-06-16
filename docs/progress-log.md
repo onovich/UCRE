@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 9 - Editor, Simulation, And Balance Tools
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add simulation CLI.
+- Next recommended round: add balance metrics output.
 
 ## Round Template
 
@@ -521,5 +521,15 @@ Notes:
 - Files changed: `apps/editor/package.json`, `apps/editor/src/card-editor-model.ts`, `apps/editor/src/card-editor-model.test.ts`, `apps/editor/src/content-round-trip.test.ts`, `pnpm-lock.yaml`, `docs/adr/0040-editor-slay-like-round-trip-manifest.md`, and this progress log.
 - Validation: `corepack pnpm test apps/editor/src/card-editor-model.test.ts apps/editor/src/content-round-trip.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/editor build`, Playwright editor smoke on `http://127.0.0.1:5175` for runtime effect type visibility, reward reference repair, clean console, runtime-loadable manifest preview, and 390px mobile overflow, Phase 9 architecture searches for browser-safe compiler imports and test-only ruleset/replay dependencies, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed.
-- Commit: pending.
+- Commit: `862ba53 test(editor): add content round trip`
 - Notes: Editor-authored Slay-like content now carries standard resources, zones, starter deck metadata, enemy metadata, relic metadata, runtime effect types, reward pools, and stable replay coverage.
+
+### 2026-06-17 - Round P9R5
+
+- Phase: Phase 9 - Editor, Simulation, And Balance Tools
+- Deliverable: added the `@ucre/sim` package and `sim:slay` CLI for deterministic scripted Slay-like simulation runs with stable JSON output.
+- Files changed: `packages/sim/*`, `package.json`, `tsconfig.packages.json`, `scripts/check-architecture.mjs`, `pnpm-lock.yaml`, `docs/adr/0041-simulation-cli-package.md`, and this progress log.
+- Validation: `corepack pnpm test packages/sim/src/index.test.ts`, `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/sim build`, `node packages\sim\dist\cli.js --runs 3 --seed-prefix smoke`, `corepack pnpm sim:slay -- --runs 2 --seed-prefix script`, Phase 9 architecture searches for nondeterminism, browser/storage/presentation leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after making the CLI tolerate pnpm's standalone `--` separator and removing an unused test parameter caught by lint.
+- Commit: pending.
+- Notes: The CLI defaults to 1,000 deterministic runs and currently uses a fixed Slay-like scripted policy; richer balance metrics are planned for the next round.

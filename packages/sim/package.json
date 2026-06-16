@@ -1,0 +1,26 @@
+{
+  "name": "@ucre/sim",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@ucre/core": "workspace:*",
+    "@ucre/replay": "workspace:*",
+    "@ucre/rulesets": "workspace:*"
+  },
+  "bin": {
+    "ucre-sim": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  }
+}

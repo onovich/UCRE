@@ -14,6 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
+    "sim:slay": "node packages/sim/dist/cli.js",
     "structure:check": "node scripts/check-architecture.mjs",
     "test": "vitest run",
     "typecheck": "tsc -b tsconfig.packages.json && tsc -p tsconfig.apps.json --noEmit",

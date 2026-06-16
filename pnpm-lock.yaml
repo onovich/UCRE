@@ -200,6 +200,18 @@ importers:
         specifier: ^6.2.5
         version: 6.2.5
 
+  packages/sim:
+    dependencies:
+      '@ucre/core':
+        specifier: workspace:*
+        version: link:../core
+      '@ucre/replay':
+        specifier: workspace:*
+        version: link:../replay
+      '@ucre/rulesets':
+        specifier: workspace:*
+        version: link:../rulesets
+
   packages/theater-three:
     dependencies:
       '@ucre/presentation-core':
