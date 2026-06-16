@@ -171,6 +171,15 @@ importers:
         specifier: ^4.2.1
         version: 4.4.4
     devDependencies:
+      '@ucre/core':
+        specifier: workspace:*
+        version: link:../core
+      '@ucre/replay':
+        specifier: workspace:*
+        version: link:../replay
+      '@ucre/rulesets':
+        specifier: workspace:*
+        version: link:../rulesets
       fake-indexeddb:
         specifier: ^6.2.5
         version: 6.2.5

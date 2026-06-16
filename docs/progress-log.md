@@ -4,9 +4,9 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 ## Current Status
 
-- Current phase: Phase 7 - Roguelike Run Loop
+- Current phase: Phase 8 - Ruleset Pressure Tests
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add short run E2E.
+- Next recommended round: add blackjack-like zones, resources, and phase setup.
 
 ## Round Template
 
@@ -411,5 +411,15 @@ Notes:
 - Files changed: `apps/replay-viewer/package.json`, `apps/replay-viewer/index.html`, `apps/replay-viewer/src/App.tsx`, `pnpm-lock.yaml`, and this progress log.
 - Validation: `corepack pnpm typecheck`, `corepack pnpm --filter @ucre/replay-viewer build`, replay-viewer Vite dev server smoke on `http://127.0.0.1:5174`, system Chrome browser smoke for verified save/hash/reward/deck content and mobile 390px overflow, full project validation, and architecture boundary searches confirming replay-viewer consumes run contracts without direct core dependency or storage coupling.
 - Result: passed after replacing an unnecessary direct `@ucre/core` type import and adding an inline favicon to remove browser 404 noise.
-- Commit: pending.
+- Commit: `15eb4ea feat(replay-viewer): inspect run saves`
 - Notes: The replay viewer now displays a deterministic run-level save package and validates the save hash in the browser.
+
+### 2026-06-17 - Round P7R7
+
+- Phase: Phase 7 - Roguelike Run Loop
+- Deliverable: added a short run E2E covering start node traversal, Slay-like encounter replay, run-level reward claim, victory settlement, Dexie save/load, and replay-after-reload hash checks.
+- Files changed: `packages/run-dexie/package.json`, `packages/run-dexie/tsconfig.json`, `packages/run-dexie/src/short-run-e2e.test.ts`, `pnpm-lock.yaml`, and this progress log.
+- Validation: `corepack pnpm install`, `corepack pnpm test packages/run-dexie/src/short-run-e2e.test.ts`, `corepack pnpm --filter @ucre/run-dexie build`, Phase 7 architecture boundary searches for Dexie isolation and nondeterminism, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after correcting the E2E assertion to use the save package `currentRunState` contract and formatting the new test.
+- Commit: pending.
+- Notes: Phase 7 exit gate is locally satisfied: a minimal run can start, traverse into an encounter, complete via command replay, choose a reward, settle victory, persist, reload, and replay to identical hashes.

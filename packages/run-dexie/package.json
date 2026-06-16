@@ -20,6 +20,9 @@
     "build": "tsc -p tsconfig.json"
   },
   "devDependencies": {
+    "@ucre/core": "workspace:*",
+    "@ucre/replay": "workspace:*",
+    "@ucre/rulesets": "workspace:*",
     "fake-indexeddb": "^6.2.5"
   }
 }
