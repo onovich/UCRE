@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 10 - Vertical Demo And Desktop Build
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: audit Phase 10 exit gates and close any final checklist gaps.
+- Next recommended round: perform the final completion audit and close the goal if all Phase 0-10 evidence still holds.
 
 ## Round Template
 
@@ -601,5 +601,15 @@ Notes:
 - Files changed: `.gitignore`, `apps/desktop/*`, `pnpm-lock.yaml`, and this progress log.
 - Validation: `corepack pnpm install`, `corepack pnpm --filter @ucre/game build`, `corepack pnpm --filter @ucre/desktop build`, `corepack pnpm --filter @ucre/desktop package:win`, `corepack pnpm --filter @ucre/desktop smoke`, Phase 10 architecture searches confirming Electron stays in `apps/desktop`, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after moving electron-builder packaging through a temporary no-dependency staging project and forcing npm-style package-manager detection to avoid pnpm workspace dependency-tree parsing failures.
-- Commit: pending.
+- Commit: `723854a feat(desktop): add electron demo package`
 - Notes: `apps/desktop/dist/UCRE-Demo.exe` builds locally and the smoke script confirmed it launches and stays alive before process cleanup; the final Phase 10 round should audit the exit gate against the current evidence.
+
+### 2026-06-17 - Round P10R5
+
+- Phase: Phase 10 - Vertical Demo And Desktop Build
+- Deliverable: added a playable short-run path to the game app that starts on the first encounter, advances through event, shop, rest, boss, and victory nodes, gates encounter node completion on command-dispatched encounter completion, and keeps the Run scenario available in normal and fast presentation modes.
+- Files changed: `apps/game/package.json`, `apps/game/src/App.tsx`, `apps/game/src/demo-model.ts`, `apps/game/src/demo-model.test.ts`, `apps/game/src/run-demo-model.ts`, `apps/game/src/run-demo-model.test.ts`, `apps/game/src/styles.css`, `pnpm-lock.yaml`, and this progress log.
+- Validation: `corepack pnpm install`, `corepack pnpm test apps/game/src/demo-model.test.ts apps/game/src/run-demo-model.test.ts`, `corepack pnpm --filter @ucre/game build`, Chrome DevTools Protocol smoke on `http://127.0.0.1:5176` for Run scenario completion through victory, fast boss segment, nonblank WebGL canvas, clean console, and 390px mobile overflow; `corepack pnpm --filter @ucre/desktop package:win`, `corepack pnpm --filter @ucre/desktop smoke`, Phase 10 architecture searches for UI state mutation, nondeterminism, and Electron leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after adding the Run scenario to `DEMO_SCENARIO_LIST` so the UI control was actually rendered.
+- Commit: pending.
+- Notes: Phase 10 now has both run-level E2E verification and a playable browser/Electron run path from encounter through boss and victory.

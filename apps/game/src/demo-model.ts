@@ -9,7 +9,7 @@ import {
   type SlayLikeEnemyDefinition,
 } from "@ucre/rulesets";
 
-export type DemoScenarioId = "starter" | "boss";
+export type DemoScenarioId = "starter" | "boss" | "run";
 export type PlaybackMode = "normal" | "fast";
 export type BossMomentStatus = "inactive" | "active" | "defeated";
 
@@ -46,11 +46,20 @@ export const DEMO_SCENARIOS: Readonly<Record<DemoScenarioId, DemoScenario>> = {
     seed: "boss-demo-seed-1",
     summary: "Hexaghost showcase",
   },
+  run: {
+    id: "run",
+    label: "Run",
+    eyebrow: "Playable Run",
+    gameId: "slay-run-demo-encounter-1",
+    seed: "run-demo-seed-1",
+    summary: "Short act route",
+  },
 };
 
 export const DEMO_SCENARIO_LIST: readonly DemoScenario[] = [
   DEMO_SCENARIOS.starter,
   DEMO_SCENARIOS.boss,
+  DEMO_SCENARIOS.run,
 ];
 
 const BOSS_OBJECT_ID = "enemy-hexaghost";
@@ -81,6 +90,21 @@ export function createDemoShellState(scenarioId: DemoScenarioId): GameState {
     });
   }
 
+  if (scenarioId === "run") {
+    return createSlayLikeEncounter({
+      gameId: scenario.gameId,
+      seed: scenario.seed,
+      contentManifestHash: "slay-like-phase10-run-demo",
+      enemies: [requireSlayLikeEnemyDefinition("acidSlime")],
+      starterDeck: [
+        {
+          id: "heavy-strike-1",
+          definitionId: "heavyStrike",
+        },
+      ],
+    });
+  }
+
   return createSlayLikeEncounter({
     gameId: scenario.gameId,
     seed: scenario.seed,
@@ -99,7 +123,9 @@ export function createDemoBeatSchedule(
 }
 
 export function getBossMoment(state: GameState): BossMoment {
-  if (state.id !== DEMO_SCENARIOS.boss.gameId) {
+  const isBossState = state.id === DEMO_SCENARIOS.boss.gameId || state.id.includes("hexaghost");
+
+  if (!isBossState) {
     return {
       status: "inactive",
       label: "No boss",

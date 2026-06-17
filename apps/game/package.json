@@ -6,6 +6,7 @@
   "dependencies": {
     "@ucre/core": "workspace:*",
     "@ucre/presentation-core": "workspace:*",
+    "@ucre/run": "workspace:*",
     "@ucre/rulesets": "workspace:*",
     "@ucre/theater-three": "workspace:*",
     "react": "^19.1.0",

@@ -219,6 +219,56 @@ button:disabled {
   color: #9ff1c6;
 }
 
+.run-panel {
+  align-items: center;
+  background: #171611;
+  border: 1px solid #3c4438;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.run-node-list,
+.run-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.run-node-chip {
+  border: 1px solid #4b4636;
+  border-radius: 999px;
+  color: #c7bea8;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 6px 9px;
+}
+
+.run-node-chip--current {
+  background: #2f7d62;
+  border-color: #47a880;
+  color: #f7fff9;
+}
+
+.run-node-chip--available {
+  background: #25291f;
+  color: #f3d68a;
+}
+
+.run-node-chip--complete {
+  background: #17312a;
+  border-color: #4d8e71;
+  color: #9ff1c6;
+}
+
+.run-node-chip--locked {
+  opacity: 0.56;
+}
+
 .theater-stage {
   background: #11100d;
   height: 340px;
@@ -694,6 +744,16 @@ button:disabled {
 
   .segmented-control button {
     min-width: 0;
+  }
+
+  .run-panel,
+  .run-node-list,
+  .run-actions {
+    width: 100%;
+  }
+
+  .run-actions .primary-button {
+    width: 100%;
   }
 
   .boss-moment {

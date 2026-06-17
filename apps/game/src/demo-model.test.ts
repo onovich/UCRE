@@ -7,11 +7,20 @@ import {
 } from "@ucre/rulesets";
 import { describe, expect, it } from "vitest";
 
-import { createDemoBeatSchedule, createDemoShellState, getBossMoment } from "./demo-model.js";
+import {
+  DEMO_SCENARIO_LIST,
+  createDemoBeatSchedule,
+  createDemoShellState,
+  getBossMoment,
+} from "./demo-model.js";
 
 const PLAYER_ID = "player-1";
 
 describe("game demo model", () => {
+  it("exposes starter, boss, and run scenarios to the UI", () => {
+    expect(DEMO_SCENARIO_LIST.map((scenario) => scenario.id)).toEqual(["starter", "boss", "run"]);
+  });
+
   it("creates a Phase 10 boss scenario with Hexaghost and a scripted starter deck", () => {
     const state = createDemoShellState("boss");
 

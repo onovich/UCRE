@@ -90,6 +90,9 @@ importers:
       '@ucre/rulesets':
         specifier: workspace:*
         version: link:../../packages/rulesets
+      '@ucre/run':
+        specifier: workspace:*
+        version: link:../../packages/run
       '@ucre/theater-three':
         specifier: workspace:*
         version: link:../../packages/theater-three

@@ -21,6 +21,15 @@ import {
   type DemoScenarioId,
   type PlaybackMode,
 } from "./demo-model.js";
+import {
+  advanceDemoRunNode,
+  createDemoRunState,
+  createGameStateForRunNode,
+  createRunNodeViews,
+  createStartedDemoRunState,
+  getCurrentRunNode,
+  isEncounterRunNode,
+} from "./run-demo-model.js";
 import "./styles.css";
 
 const PLAYER_ID = "player-1";
@@ -66,10 +75,19 @@ export function App({ appName = "UCRE Game" }: AppProps) {
   const [scenarioId, setScenarioId] = useState<DemoScenarioId>("starter");
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>("normal");
   const [state, setState] = useState(() => createDemoShellState("starter"));
+  const [runState, setRunState] = useState(createDemoRunState);
   const [timeline, setTimeline] = useState<readonly TimelineEntry[]>([]);
   const [selectedTargetId, setSelectedTargetId] = useState<string | undefined>();
 
   const scenario = DEMO_SCENARIOS[scenarioId];
+  const currentRunNode = scenarioId === "run" ? getCurrentRunNode(runState) : undefined;
+  const runNodeViews = useMemo(() => createRunNodeViews(runState), [runState]);
+  const isCommandSurfaceEnabled = scenarioId !== "run" || isEncounterRunNode(currentRunNode);
+  const canAdvanceRunNode =
+    scenarioId === "run" &&
+    runState.status !== "complete" &&
+    !!currentRunNode &&
+    (!isEncounterRunNode(currentRunNode) || state.phase === SLAY_LIKE_PHASES.complete);
   const playerResources = state.resources[PLAYER_ID]?.values ?? {};
   const hand = getZoneObjects(state, SLAY_LIKE_ZONES.hand);
   const drawPile = getZoneObjects(state, SLAY_LIKE_ZONES.drawPile);
@@ -81,8 +99,9 @@ export function App({ appName = "UCRE Game" }: AppProps) {
   const selectedEnemy =
     livingEnemies.find((enemy) => enemy.id === selectedTargetId) ?? livingEnemies[0];
   const commandPreviews = useMemo(
-    () => createCommandPreviews(state, selectedEnemy, playbackMode),
-    [playbackMode, selectedEnemy, state],
+    () =>
+      isCommandSurfaceEnabled ? createCommandPreviews(state, selectedEnemy, playbackMode) : [],
+    [isCommandSurfaceEnabled, playbackMode, selectedEnemy, state],
   );
   const latestDiffs = timeline[0]?.diffs ?? [];
   const latestEntry = timeline[0];
@@ -129,8 +148,15 @@ export function App({ appName = "UCRE Game" }: AppProps) {
   }
 
   function loadScenario(nextScenarioId: DemoScenarioId) {
+    const nextRunState =
+      nextScenarioId === "run" ? createStartedDemoRunState() : createDemoRunState();
     setScenarioId(nextScenarioId);
-    setState(createDemoShellState(nextScenarioId));
+    setRunState(nextRunState);
+    setState(
+      nextScenarioId === "run"
+        ? (createGameStateForRunNode(nextRunState) ?? createDemoShellState("run"))
+        : createDemoShellState(nextScenarioId),
+    );
     setTimeline([]);
     setSelectedTargetId(undefined);
   }
@@ -167,6 +193,27 @@ export function App({ appName = "UCRE Game" }: AppProps) {
     );
   }
 
+  function advanceRunNode() {
+    if (scenarioId !== "run" || !currentRunNode) {
+      return;
+    }
+
+    const nextRunState = advanceDemoRunNode(runState, {
+      completedBy: "game-demo",
+      nodeKind: currentRunNode.kind,
+      encounterPhase: state.phase,
+    });
+    const nextGameState = createGameStateForRunNode(nextRunState);
+
+    setRunState(nextRunState);
+
+    if (nextGameState) {
+      setState(nextGameState);
+      setTimeline([]);
+      setSelectedTargetId(undefined);
+    }
+  }
+
   return (
     <main className="app-shell" aria-label={appName}>
       <header className="app-header">
@@ -189,7 +236,11 @@ export function App({ appName = "UCRE Game" }: AppProps) {
           className="primary-button"
           type="button"
           onClick={drawCards}
-          disabled={state.phase !== SLAY_LIKE_PHASES.playerTurn || drawPile.length === 0}
+          disabled={
+            !isCommandSurfaceEnabled ||
+            state.phase !== SLAY_LIKE_PHASES.playerTurn ||
+            drawPile.length === 0
+          }
         >
           Draw
         </button>
@@ -197,7 +248,7 @@ export function App({ appName = "UCRE Game" }: AppProps) {
           className="primary-button"
           type="button"
           onClick={endTurn}
-          disabled={state.phase !== SLAY_LIKE_PHASES.playerTurn}
+          disabled={!isCommandSurfaceEnabled || state.phase !== SLAY_LIKE_PHASES.playerTurn}
         >
           End Turn
         </button>
@@ -242,6 +293,33 @@ export function App({ appName = "UCRE Game" }: AppProps) {
       ) : null}
 
       <TheaterCanvas state={state} playbackMode={playbackMode} bossMoment={bossMoment.status} />
+
+      {scenarioId === "run" ? (
+        <section className="run-panel" aria-label="Run path">
+          <div className="run-node-list">
+            {runNodeViews.map((node) => (
+              <span className={`run-node-chip run-node-chip--${node.status}`} key={node.id}>
+                {node.label}
+              </span>
+            ))}
+          </div>
+          <div className="run-actions">
+            <span className="status-pill">
+              {runState.status === "complete"
+                ? "Run complete"
+                : `Current ${currentRunNode?.kind ?? "node"}`}
+            </span>
+            <button
+              className="primary-button"
+              type="button"
+              onClick={advanceRunNode}
+              disabled={!canAdvanceRunNode}
+            >
+              {formatRunActionLabel(currentRunNode?.kind, runState.status)}
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="dashboard-grid" aria-label="Game dashboard">
         <aside className="side-panel" aria-label="Resources">
@@ -290,6 +368,7 @@ export function App({ appName = "UCRE Game" }: AppProps) {
             {hand.map((card) => {
               const definition = SLAY_LIKE_CARD_DEFINITIONS[card.definitionId];
               const canPlay =
+                isCommandSurfaceEnabled &&
                 state.phase === SLAY_LIKE_PHASES.playerTurn &&
                 !!definition &&
                 (playerResources[SLAY_LIKE_RESOURCES.energy] ?? 0) >= definition.cost &&
@@ -349,6 +428,12 @@ export function App({ appName = "UCRE Game" }: AppProps) {
               <dt>Playback</dt>
               <dd>{playbackMode}</dd>
             </div>
+            {scenarioId === "run" ? (
+              <div>
+                <dt>Run Node</dt>
+                <dd>{currentRunNode?.kind ?? runState.status}</dd>
+              </div>
+            ) : null}
             <div>
               <dt>Rules</dt>
               <dd>{state.rulesVersion}</dd>
@@ -788,6 +873,22 @@ function formatBeatProfile(beat: PresentationBeat): string {
   }
 
   return formatDiffValue(profile.payload);
+}
+
+function formatRunActionLabel(kind: string | undefined, status: string): string {
+  if (status === "complete") {
+    return "Victory";
+  }
+
+  if (kind === "encounter" || kind === "boss") {
+    return "Complete Node";
+  }
+
+  if (kind === "victory") {
+    return "Claim Victory";
+  }
+
+  return "Advance Node";
 }
 
 function Metric({ label, value }: { readonly label: string; readonly value: number }) {
