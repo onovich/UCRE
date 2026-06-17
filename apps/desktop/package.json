@@ -1,0 +1,48 @@
+{
+  "name": "@ucre/desktop",
+  "version": "0.0.0",
+  "description": "Electron wrapper for the UCRE Phase 10 vertical demo.",
+  "author": "UCRE",
+  "private": true,
+  "type": "module",
+  "main": "src/main.js",
+  "scripts": {
+    "build": "corepack pnpm --filter @ucre/game build && node scripts/verify-game-dist.mjs",
+    "package:win": "corepack pnpm --filter @ucre/game build && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-win.ps1",
+    "smoke": "node scripts/smoke.mjs dist/UCRE-Demo.exe",
+    "start": "corepack pnpm --filter @ucre/game build && electron ."
+  },
+  "build": {
+    "appId": "dev.ucre.demo",
+    "productName": "UCRE Demo",
+    "artifactName": "UCRE-Demo.exe",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**",
+      "package.json",
+      {
+        "from": "../game/dist",
+        "to": "game-dist",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^42.4.1",
+    "electron-builder": "^26.15.3"
+  }
+}

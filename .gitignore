@@ -4,4 +4,4 @@ coverage/
 .vite/
 *.tsbuildinfo
 .codex/project-ops-devserver.pid
-
+apps/desktop/.electron-staging/

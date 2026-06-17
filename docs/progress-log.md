@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 10 - Vertical Demo And Desktop Build
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add Electron packaging and desktop launch smoke for the vertical demo.
+- Next recommended round: audit Phase 10 exit gates and close any final checklist gaps.
 
 ## Round Template
 
@@ -591,5 +591,15 @@ Notes:
 - Files changed: `apps/game/src/App.tsx`, `apps/game/src/TheaterCanvas.tsx`, `apps/game/src/demo-model.ts`, `apps/game/src/demo-model.test.ts`, `apps/game/src/styles.css`, and this progress log.
 - Validation: `corepack pnpm test apps/game/src/demo-model.test.ts`, `corepack pnpm --filter @ucre/game build`, `corepack pnpm typecheck`, Chrome DevTools Protocol smoke on `http://127.0.0.1:5176` for boss defeat, fast mode, nonblank WebGL canvas, clean console, and 390px mobile overflow; Phase 10 architecture searches for nondeterminism, direct UI state mutation, and pure package dependency leakage; and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after tightening the browser smoke cleanup so the temporary Chrome profile is removed after the process exits.
-- Commit: pending.
+- Commit: `62e590e feat(game): add boss demo fast mode`
 - Notes: The game app now exposes a focused Phase 10 boss demo path with normal and fast presentation modes; the remaining Phase 10 work should move to Electron packaging and desktop smoke.
+
+### 2026-06-17 - Round P10R4
+
+- Phase: Phase 10 - Vertical Demo And Desktop Build
+- Deliverable: added an Electron desktop wrapper for the Phase 10 game demo, Windows portable packaging through electron-builder, a launch smoke script for `UCRE-Demo.exe`, and ignored local Electron staging output.
+- Files changed: `.gitignore`, `apps/desktop/*`, `pnpm-lock.yaml`, and this progress log.
+- Validation: `corepack pnpm install`, `corepack pnpm --filter @ucre/game build`, `corepack pnpm --filter @ucre/desktop build`, `corepack pnpm --filter @ucre/desktop package:win`, `corepack pnpm --filter @ucre/desktop smoke`, Phase 10 architecture searches confirming Electron stays in `apps/desktop`, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after moving electron-builder packaging through a temporary no-dependency staging project and forcing npm-style package-manager detection to avoid pnpm workspace dependency-tree parsing failures.
+- Commit: pending.
+- Notes: `apps/desktop/dist/UCRE-Demo.exe` builds locally and the smoke script confirmed it launches and stays alive before process cleanup; the final Phase 10 round should audit the exit gate against the current evidence.
