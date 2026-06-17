@@ -4,9 +4,9 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 ## Current Status
 
-- Current phase: Phase 10 - Vertical Demo And Desktop Build
+- Current phase: Complete - Phase 0 through Phase 10
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: perform the final completion audit and close the goal if all Phase 0-10 evidence still holds.
+- Next recommended round: no major phase work remains; future rounds should start from post-demo hardening or new product scope.
 
 ## Round Template
 
@@ -611,5 +611,13 @@ Notes:
 - Files changed: `apps/game/package.json`, `apps/game/src/App.tsx`, `apps/game/src/demo-model.ts`, `apps/game/src/demo-model.test.ts`, `apps/game/src/run-demo-model.ts`, `apps/game/src/run-demo-model.test.ts`, `apps/game/src/styles.css`, `pnpm-lock.yaml`, and this progress log.
 - Validation: `corepack pnpm install`, `corepack pnpm test apps/game/src/demo-model.test.ts apps/game/src/run-demo-model.test.ts`, `corepack pnpm --filter @ucre/game build`, Chrome DevTools Protocol smoke on `http://127.0.0.1:5176` for Run scenario completion through victory, fast boss segment, nonblank WebGL canvas, clean console, and 390px mobile overflow; `corepack pnpm --filter @ucre/desktop package:win`, `corepack pnpm --filter @ucre/desktop smoke`, Phase 10 architecture searches for UI state mutation, nondeterminism, and Electron leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after adding the Run scenario to `DEMO_SCENARIO_LIST` so the UI control was actually rendered.
-- Commit: pending.
+- Commit: `b4b04f4 feat(game): add playable run path`
 - Notes: Phase 10 now has both run-level E2E verification and a playable browser/Electron run path from encounter through boss and victory.
+
+## Final Completion Audit
+
+- Date: 2026-06-17
+- Scope: Phase 0 through Phase 10 deliverables and exit gates in `docs/development-plan.md`.
+- Evidence: progress rounds P0R1 through P10R5 are committed and pushed; the latest full validation passes 30 Vitest files / 124 tests plus build, lint, typecheck, structure check, and docs check.
+- Phase 10 evidence: the Slay-like catalog includes the target 20 cards, 5 relics, 5 enemies, and Hexaghost boss; `packages/run-dexie/src/full-run-boss-e2e.test.ts` verifies a full short run with replay/save hashes; the game Run scenario is playable through victory in browser smoke; and `apps/desktop/dist/UCRE-Demo.exe` builds and launches in desktop smoke.
+- Result: passed. All major planned phases are complete under the continuous-delivery workflow.
