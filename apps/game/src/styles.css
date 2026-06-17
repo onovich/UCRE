@@ -14,6 +14,7 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
+  overflow-x: hidden;
 }
 
 button,
@@ -159,7 +160,9 @@ button:disabled {
   border: 1px solid #3c4438;
   border-radius: 7px;
   display: inline-grid;
+  grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
+  max-width: 100%;
   overflow: hidden;
 }
 
@@ -172,6 +175,7 @@ button:disabled {
   font-weight: 800;
   min-height: 36px;
   min-width: 82px;
+  overflow-wrap: anywhere;
   padding: 8px 12px;
 }
 
@@ -713,6 +717,8 @@ button:disabled {
 
 @media (max-width: 640px) {
   .app-shell {
+    max-width: 100vw;
+    overflow-x: hidden;
     padding: 14px;
   }
 
@@ -730,6 +736,7 @@ button:disabled {
   .status-cluster,
   .command-bar,
   .mode-row {
+    max-width: calc(100vw - 28px);
     width: 100%;
   }
 
@@ -739,11 +746,14 @@ button:disabled {
   }
 
   .segmented-control {
+    inline-size: min(100%, calc(100vw - 28px));
     width: 100%;
   }
 
   .segmented-control button {
     min-width: 0;
+    padding-left: 8px;
+    padding-right: 8px;
   }
 
   .run-panel,
@@ -765,5 +775,20 @@ button:disabled {
   .enemy-strip,
   .empty-strip {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-shell {
+    width: min(100%, 390px);
+  }
+
+  .status-cluster,
+  .command-bar,
+  .mode-row,
+  .segmented-control {
+    inline-size: 100%;
+    max-inline-size: 100%;
+    max-width: 100%;
   }
 }

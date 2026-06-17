@@ -621,3 +621,10 @@ Notes:
 - Evidence: progress rounds P0R1 through P10R5 are committed and pushed; the latest full validation passes 30 Vitest files / 124 tests plus build, lint, typecheck, structure check, and docs check.
 - Phase 10 evidence: the Slay-like catalog includes the target 20 cards, 5 relics, 5 enemies, and Hexaghost boss; `packages/run-dexie/src/full-run-boss-e2e.test.ts` verifies a full short run with replay/save hashes; the game Run scenario is playable through victory in browser smoke; and `apps/desktop/dist/UCRE-Demo.exe` builds and launches in desktop smoke.
 - Result: passed. All major planned phases are complete under the continuous-delivery workflow.
+
+## Formal Acceptance
+
+- Date: 2026-06-17
+- Scope: independent acceptance criteria and acceptance run for the completed Phase 0 through Phase 10 project.
+- Evidence: `docs/acceptance-criteria.md` and `docs/acceptance-report-2026-06-17.md`.
+- Result: accepted after fixing a mobile segmented-control clipping issue in the game app.
