@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 10 - Vertical Demo And Desktop Build
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: wire expanded catalog into a full short run with boss node.
+- Next recommended round: add polished boss presentation and fast mode to the playable game path.
 
 ## Round Template
 
@@ -571,5 +571,15 @@ Notes:
 - Files changed: `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, and this progress log.
 - Validation: `corepack pnpm test packages/rulesets/src/slay-like.test.ts packages/rulesets/src/slay-like-replay.test.ts`, `corepack pnpm --filter @ucre/rulesets build`, `corepack pnpm --filter @ucre/game build`, Phase 10 architecture searches confirming the catalog expansion stayed inside rulesets and avoided nondeterministic/browser/presentation leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed.
-- Commit: pending.
+- Commit: `5678875 feat(rulesets): expand slay demo catalog`
 - Notes: The catalog now satisfies the Phase 10 quantity target for cards, relics, enemies, and boss content; the next round should wire these into a full short run path.
+
+### 2026-06-17 - Round P10R2
+
+- Phase: Phase 10 - Vertical Demo And Desktop Build
+- Deliverable: added a full boss-run E2E that traverses start, encounter, event, shop, rest, boss, and victory nodes; replays normal and boss Slay-like encounters; records run snapshots; saves and reloads a verified Dexie run package; and fixed zero-cost Slay-like card play.
+- Files changed: `packages/run-dexie/src/full-run-boss-e2e.test.ts`, `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, and this progress log.
+- Validation: `corepack pnpm --filter @ucre/rulesets build`, `corepack pnpm test packages/rulesets/src/slay-like.test.ts packages/run-dexie/src/full-run-boss-e2e.test.ts`, `corepack pnpm --filter @ucre/run-dexie build`, `corepack pnpm typecheck`, Phase 10 architecture searches for nondeterminism and presentation/UI leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after fixing zero-cost Slay-like cards so they do not emit invalid zero-amount `SpendResource` effects, and after formatting the new E2E file.
+- Commit: pending.
+- Notes: The run layer now proves a complete short path can reach and resolve a boss node with stable replay/save hashes; next work can focus on the game presentation path and fast mode.

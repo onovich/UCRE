@@ -303,6 +303,62 @@ describe("slay-like encounter scaffold", () => {
     ]);
   });
 
+  it("plays zero-cost cards without spending energy", () => {
+    const state = createSlayLikeEncounter({
+      gameId: "slay-zero-cost",
+      seed: "seed-zero-cost",
+      starterDeck: [
+        {
+          id: "quick-strike-1",
+          definitionId: "quickStrike",
+        },
+      ],
+    });
+    const draw = executeSlayLikeCommand({
+      state,
+      command: {
+        id: "command-1",
+        type: SLAY_LIKE_COMMANDS.drawCards,
+        playerId: "player-1",
+        payload: {
+          count: 1,
+        },
+      },
+    });
+
+    expect(draw.ok).toBe(true);
+    if (!draw.ok) {
+      throw new Error("Draw command unexpectedly failed.");
+    }
+
+    const play = executeSlayLikeCommand({
+      state: draw.state,
+      command: {
+        id: "command-2",
+        type: SLAY_LIKE_COMMANDS.playCard,
+        playerId: "player-1",
+        payload: {
+          cardId: "quick-strike-1",
+          targetObjectId: "enemy-jaw-worm",
+        },
+      },
+    });
+
+    expect(play.ok).toBe(true);
+    if (!play.ok) {
+      throw new Error("Zero-cost card unexpectedly failed.");
+    }
+
+    expect(play.state.resources["player-1"]?.values[SLAY_LIKE_RESOURCES.energy]).toBe(3);
+    expect(play.state.objects["enemy-jaw-worm"]?.attributes.hp).toBe(9);
+    expect(play.events.map((event) => event.type)).toEqual([
+      "ObjectMoved",
+      "DamageDealt",
+      "ObjectMoved",
+      "CardDiscarded",
+    ]);
+  });
+
   it("rejects targeted cards without a target", () => {
     const state = createSlayLikeEncounter({
       gameId: "slay-1",

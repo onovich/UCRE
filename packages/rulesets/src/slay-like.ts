@@ -593,8 +593,10 @@ export function createSlayLikeCommandRegistry(
           return [];
         }
 
-        const effects: Effect[] = [
-          {
+        const effects: Effect[] = [];
+
+        if (definition.cost > 0) {
+          effects.push({
             id: "spend-energy",
             type: SPEND_RESOURCE_EFFECT_TYPE,
             payload: {
@@ -602,16 +604,17 @@ export function createSlayLikeCommandRegistry(
               resourceId: SLAY_LIKE_RESOURCES.energy,
               amount: definition.cost,
             },
+          });
+        }
+
+        effects.push({
+          id: "move-card-to-play",
+          type: MOVE_OBJECT_EFFECT_TYPE,
+          payload: {
+            objectId: cardId,
+            toZoneId: SLAY_LIKE_ZONES.playArea,
           },
-          {
-            id: "move-card-to-play",
-            type: MOVE_OBJECT_EFFECT_TYPE,
-            payload: {
-              objectId: cardId,
-              toZoneId: SLAY_LIKE_ZONES.playArea,
-            },
-          },
-        ];
+        });
         const postCardEffects: Effect[] = [];
 
         if (definition.damage) {
