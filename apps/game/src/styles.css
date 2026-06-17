@@ -76,6 +76,14 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.scenario-summary {
+  color: #9ecfb5;
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
 .status-cluster,
 .command-bar,
 .enemy-stats,
@@ -139,6 +147,78 @@ button:disabled {
   padding-bottom: 14px;
 }
 
+.mode-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.segmented-control {
+  background: #171611;
+  border: 1px solid #3c4438;
+  border-radius: 7px;
+  display: inline-grid;
+  grid-auto-flow: column;
+  overflow: hidden;
+}
+
+.segmented-control button {
+  background: transparent;
+  border: 0;
+  border-right: 1px solid #3c4438;
+  color: #d7d2c5;
+  cursor: pointer;
+  font-weight: 800;
+  min-height: 36px;
+  min-width: 82px;
+  padding: 8px 12px;
+}
+
+.segmented-control button:last-child {
+  border-right: 0;
+}
+
+.segmented-control button[aria-pressed="true"] {
+  background: #2f7d62;
+  color: #f7fff9;
+}
+
+.boss-moment {
+  align-items: center;
+  border: 1px solid #70483d;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  min-height: 54px;
+  padding: 12px 14px;
+}
+
+.boss-moment span {
+  color: #ffd4c3;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.boss-moment strong {
+  color: #fff5df;
+  overflow-wrap: anywhere;
+}
+
+.boss-moment--active {
+  background: linear-gradient(90deg, #301b1f, #182823);
+}
+
+.boss-moment--defeated {
+  background: linear-gradient(90deg, #17312a, #24261b);
+  border-color: #4d8e71;
+}
+
+.boss-moment--defeated span {
+  color: #9ff1c6;
+}
+
 .theater-stage {
   background: #11100d;
   height: 340px;
@@ -146,6 +226,21 @@ button:disabled {
   margin-right: -20px;
   overflow: hidden;
   position: relative;
+}
+
+.theater-stage--active::before,
+.theater-stage--defeated::before {
+  border: 1px solid rgb(255 205 168 / 42%);
+  border-radius: 10px;
+  content: "";
+  inset: 12px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+.theater-stage--defeated::before {
+  border-color: rgb(159 241 198 / 42%);
 }
 
 .theater-stage canvas {
@@ -162,6 +257,7 @@ button:disabled {
   left: 20px;
   position: absolute;
   right: 20px;
+  z-index: 2;
 }
 
 .theater-overlay span,
@@ -582,13 +678,26 @@ button:disabled {
   }
 
   .status-cluster,
-  .command-bar {
+  .command-bar,
+  .mode-row {
     width: 100%;
   }
 
   .primary-button,
   .ghost-button {
     flex: 1 1 120px;
+  }
+
+  .segmented-control {
+    width: 100%;
+  }
+
+  .segmented-control button {
+    min-width: 0;
+  }
+
+  .boss-moment {
+    grid-template-columns: 1fr;
   }
 
   .card-button,

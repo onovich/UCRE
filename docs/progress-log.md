@@ -6,7 +6,7 @@ This log is maintained by the long-running Goal mode workflow in `docs/goal-mode
 
 - Current phase: Phase 10 - Vertical Demo And Desktop Build
 - Baseline before continuous-delivery workflow: `6c3acab docs: add UCRE development plan`
-- Next recommended round: add polished boss presentation and fast mode to the playable game path.
+- Next recommended round: add Electron packaging and desktop launch smoke for the vertical demo.
 
 ## Round Template
 
@@ -581,5 +581,15 @@ Notes:
 - Files changed: `packages/run-dexie/src/full-run-boss-e2e.test.ts`, `packages/rulesets/src/slay-like.ts`, `packages/rulesets/src/slay-like.test.ts`, and this progress log.
 - Validation: `corepack pnpm --filter @ucre/rulesets build`, `corepack pnpm test packages/rulesets/src/slay-like.test.ts packages/run-dexie/src/full-run-boss-e2e.test.ts`, `corepack pnpm --filter @ucre/run-dexie build`, `corepack pnpm typecheck`, Phase 10 architecture searches for nondeterminism and presentation/UI leakage, and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
 - Result: passed after fixing zero-cost Slay-like cards so they do not emit invalid zero-amount `SpendResource` effects, and after formatting the new E2E file.
-- Commit: pending.
+- Commit: `2f5bb85 test(run): add full boss run e2e`
 - Notes: The run layer now proves a complete short path can reach and resolve a boss node with stable replay/save hashes; next work can focus on the game presentation path and fast mode.
+
+### 2026-06-17 - Round P10R3
+
+- Phase: Phase 10 - Vertical Demo And Desktop Build
+- Deliverable: added game demo scenario controls for the starter and Hexaghost boss encounters, a fast playback mode that shortens beat scheduling and snaps theater animation to target anchors, boss moment UI states, and browser smoke coverage for defeating the boss in the playable game path.
+- Files changed: `apps/game/src/App.tsx`, `apps/game/src/TheaterCanvas.tsx`, `apps/game/src/demo-model.ts`, `apps/game/src/demo-model.test.ts`, `apps/game/src/styles.css`, and this progress log.
+- Validation: `corepack pnpm test apps/game/src/demo-model.test.ts`, `corepack pnpm --filter @ucre/game build`, `corepack pnpm typecheck`, Chrome DevTools Protocol smoke on `http://127.0.0.1:5176` for boss defeat, fast mode, nonblank WebGL canvas, clean console, and 390px mobile overflow; Phase 10 architecture searches for nondeterminism, direct UI state mutation, and pure package dependency leakage; and `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`.
+- Result: passed after tightening the browser smoke cleanup so the temporary Chrome profile is removed after the process exits.
+- Commit: pending.
+- Notes: The game app now exposes a focused Phase 10 boss demo path with normal and fast presentation modes; the remaining Phase 10 work should move to Electron packaging and desktop smoke.

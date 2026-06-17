@@ -1,33 +1,30 @@
 import { useMemo, useState } from "react";
 
 import type { Command, GameObject, GameState, JsonObject, RuleEvent } from "@ucre/core";
-import {
-  createBeatSchedule,
-  type PresentationBeat,
-  type PresentationIntent,
-} from "@ucre/presentation-core";
+import { type PresentationBeat, type PresentationIntent } from "@ucre/presentation-core";
 import {
   SLAY_LIKE_CARD_DEFINITIONS,
   SLAY_LIKE_COMMANDS,
   SLAY_LIKE_PHASES,
   SLAY_LIKE_RESOURCES,
   SLAY_LIKE_ZONES,
-  createSlayLikeEncounter,
   executeSlayLikeCommand,
 } from "@ucre/rulesets";
 
 import { TheaterCanvas } from "./TheaterCanvas.js";
+import {
+  DEMO_SCENARIO_LIST,
+  DEMO_SCENARIOS,
+  createDemoBeatSchedule,
+  createDemoShellState,
+  getBossMoment,
+  type DemoScenarioId,
+  type PlaybackMode,
+} from "./demo-model.js";
 import "./styles.css";
 
 const PLAYER_ID = "player-1";
-const INITIAL_GAME_ID = "slay-shell-1";
-const INITIAL_SEED = "game-shell-seed-1";
 const EVENT_LOG_LIMIT = 12;
-const SHELL_BEAT_SCHEDULE_CONFIG = {
-  defaultDurationMs: 240,
-  gapMs: 20,
-  trackBy: "kind",
-} as const;
 
 interface AppProps {
   appName?: string;
@@ -60,18 +57,19 @@ interface CommandPreview {
   readonly errors?: readonly string[];
 }
 
-function createInitialShellState(): GameState {
-  return createSlayLikeEncounter({
-    gameId: INITIAL_GAME_ID,
-    seed: INITIAL_SEED,
-  });
+interface PreviewCommandOptions {
+  readonly playbackMode: PlaybackMode;
+  readonly targetLabel?: string;
 }
 
 export function App({ appName = "UCRE Game" }: AppProps) {
-  const [state, setState] = useState(createInitialShellState);
+  const [scenarioId, setScenarioId] = useState<DemoScenarioId>("starter");
+  const [playbackMode, setPlaybackMode] = useState<PlaybackMode>("normal");
+  const [state, setState] = useState(() => createDemoShellState("starter"));
   const [timeline, setTimeline] = useState<readonly TimelineEntry[]>([]);
   const [selectedTargetId, setSelectedTargetId] = useState<string | undefined>();
 
+  const scenario = DEMO_SCENARIOS[scenarioId];
   const playerResources = state.resources[PLAYER_ID]?.values ?? {};
   const hand = getZoneObjects(state, SLAY_LIKE_ZONES.hand);
   const drawPile = getZoneObjects(state, SLAY_LIKE_ZONES.drawPile);
@@ -83,13 +81,14 @@ export function App({ appName = "UCRE Game" }: AppProps) {
   const selectedEnemy =
     livingEnemies.find((enemy) => enemy.id === selectedTargetId) ?? livingEnemies[0];
   const commandPreviews = useMemo(
-    () => createCommandPreviews(state, selectedEnemy),
-    [selectedEnemy, state],
+    () => createCommandPreviews(state, selectedEnemy, playbackMode),
+    [playbackMode, selectedEnemy, state],
   );
   const latestDiffs = timeline[0]?.diffs ?? [];
   const latestEntry = timeline[0];
   const latestBeats = latestEntry?.beats ?? [];
   const stateSummary = useMemo(() => stringifyStateSummary(state), [state]);
+  const bossMoment = getBossMoment(state);
 
   function dispatchCommand(label: string, type: string, payload: JsonObject) {
     const command: Command = {
@@ -103,7 +102,7 @@ export function App({ appName = "UCRE Game" }: AppProps) {
       command,
     });
     const diffs = result.ok ? summarizeStateDiff(state, result.state) : [];
-    const beatSchedule = createShellBeatSchedule(result.presentationIntents);
+    const beatSchedule = createShellBeatSchedule(result.presentationIntents, playbackMode);
 
     if (result.ok) {
       setState(result.state);
@@ -129,10 +128,15 @@ export function App({ appName = "UCRE Game" }: AppProps) {
     );
   }
 
-  function resetEncounter() {
-    setState(createInitialShellState());
+  function loadScenario(nextScenarioId: DemoScenarioId) {
+    setScenarioId(nextScenarioId);
+    setState(createDemoShellState(nextScenarioId));
     setTimeline([]);
     setSelectedTargetId(undefined);
+  }
+
+  function resetEncounter() {
+    loadScenario(scenarioId);
   }
 
   function drawCards() {
@@ -167,8 +171,9 @@ export function App({ appName = "UCRE Game" }: AppProps) {
     <main className="app-shell" aria-label={appName}>
       <header className="app-header">
         <div>
-          <span className="eyebrow">Rule Shell</span>
+          <span className="eyebrow">{scenario.eyebrow}</span>
           <h1>{appName}</h1>
+          <span className="scenario-summary">{scenario.summary}</span>
         </div>
         <div className="status-cluster" aria-label="Encounter status">
           <span className="status-pill">{state.phase}</span>
@@ -198,7 +203,45 @@ export function App({ appName = "UCRE Game" }: AppProps) {
         </button>
       </section>
 
-      <TheaterCanvas state={state} />
+      <section className="mode-row" aria-label="Demo controls">
+        <div className="segmented-control" aria-label="Scenario">
+          {DEMO_SCENARIO_LIST.map((demoScenario) => (
+            <button
+              type="button"
+              key={demoScenario.id}
+              aria-pressed={scenarioId === demoScenario.id}
+              onClick={() => loadScenario(demoScenario.id)}
+            >
+              {demoScenario.label}
+            </button>
+          ))}
+        </div>
+        <div className="segmented-control" aria-label="Playback mode">
+          {(["normal", "fast"] as const).map((mode) => (
+            <button
+              type="button"
+              key={mode}
+              aria-pressed={playbackMode === mode}
+              onClick={() => setPlaybackMode(mode)}
+            >
+              {mode === "normal" ? "Normal" : "Fast"}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {bossMoment.status !== "inactive" ? (
+        <section
+          className={`boss-moment boss-moment--${bossMoment.status}`}
+          aria-label="Boss moment"
+        >
+          <span>{bossMoment.label}</span>
+          <strong>{bossMoment.summary}</strong>
+          {bossMoment.hitPoints !== undefined ? <span>HP {bossMoment.hitPoints}</span> : null}
+        </section>
+      ) : null}
+
+      <TheaterCanvas state={state} playbackMode={playbackMode} bossMoment={bossMoment.status} />
 
       <section className="dashboard-grid" aria-label="Game dashboard">
         <aside className="side-panel" aria-label="Resources">
@@ -298,6 +341,14 @@ export function App({ appName = "UCRE Game" }: AppProps) {
         <aside className="side-panel inspector-panel" aria-label="Run inspector">
           <h2>Run Inspector</h2>
           <dl className="debug-list">
+            <div>
+              <dt>Scenario</dt>
+              <dd>{scenario.label}</dd>
+            </div>
+            <div>
+              <dt>Playback</dt>
+              <dd>{playbackMode}</dd>
+            </div>
             <div>
               <dt>Rules</dt>
               <dd>{state.rulesVersion}</dd>
@@ -465,6 +516,7 @@ export function App({ appName = "UCRE Game" }: AppProps) {
 function createCommandPreviews(
   state: GameState,
   selectedEnemy: GameObject | undefined,
+  playbackMode: PlaybackMode,
 ): readonly CommandPreview[] {
   const previews: CommandPreview[] = [];
   const drawPile = getZoneObjects(state, SLAY_LIKE_ZONES.drawPile);
@@ -474,24 +526,34 @@ function createCommandPreviews(
   if (state.phase === SLAY_LIKE_PHASES.playerTurn) {
     if (drawPile.length > 0) {
       previews.push(
-        previewCommand(state, "Draw", {
-          id: "preview-draw",
-          type: SLAY_LIKE_COMMANDS.drawCards,
-          playerId: PLAYER_ID,
-          payload: {
-            count: Math.min(5, drawPile.length),
+        previewCommand(
+          state,
+          "Draw",
+          {
+            id: "preview-draw",
+            type: SLAY_LIKE_COMMANDS.drawCards,
+            playerId: PLAYER_ID,
+            payload: {
+              count: Math.min(5, drawPile.length),
+            },
           },
-        }),
+          { playbackMode },
+        ),
       );
     }
 
     previews.push(
-      previewCommand(state, "End Turn", {
-        id: "preview-end-turn",
-        type: SLAY_LIKE_COMMANDS.endTurn,
-        playerId: PLAYER_ID,
-        payload: {},
-      }),
+      previewCommand(
+        state,
+        "End Turn",
+        {
+          id: "preview-end-turn",
+          type: SLAY_LIKE_COMMANDS.endTurn,
+          playerId: PLAYER_ID,
+          payload: {},
+        },
+        { playbackMode },
+      ),
     );
   }
 
@@ -513,9 +575,12 @@ function createCommandPreviews(
             ...targetPayload,
           },
         },
-        definition?.requiresTarget && selectedEnemy
-          ? `Target ${formatDefinitionName(selectedEnemy)}`
-          : undefined,
+        {
+          playbackMode,
+          ...(definition?.requiresTarget && selectedEnemy
+            ? { targetLabel: `Target ${formatDefinitionName(selectedEnemy)}` }
+            : {}),
+        },
       ),
     );
   }
@@ -523,14 +588,19 @@ function createCommandPreviews(
   if (state.phase === SLAY_LIKE_PHASES.reward) {
     for (const reward of rewards) {
       previews.push(
-        previewCommand(state, `Choose ${formatDefinitionName(reward)}`, {
-          id: `preview-reward-${reward.id}`,
-          type: SLAY_LIKE_COMMANDS.chooseReward,
-          playerId: PLAYER_ID,
-          payload: {
-            rewardObjectId: reward.id,
+        previewCommand(
+          state,
+          `Choose ${formatDefinitionName(reward)}`,
+          {
+            id: `preview-reward-${reward.id}`,
+            type: SLAY_LIKE_COMMANDS.chooseReward,
+            playerId: PLAYER_ID,
+            payload: {
+              rewardObjectId: reward.id,
+            },
           },
-        }),
+          { playbackMode },
+        ),
       );
     }
   }
@@ -542,13 +612,13 @@ function previewCommand(
   state: GameState,
   label: string,
   command: Command,
-  targetLabel?: string,
+  options: PreviewCommandOptions,
 ): CommandPreview {
   const result = executeSlayLikeCommand({
     state,
     command,
   });
-  const beatSchedule = createShellBeatSchedule(result.presentationIntents);
+  const beatSchedule = createShellBeatSchedule(result.presentationIntents, options.playbackMode);
 
   return {
     id: command.id,
@@ -557,13 +627,16 @@ function previewCommand(
     eventTypes: result.events.map((event) => event.type),
     beatKinds: beatSchedule.beats.map((beat) => beat.kind),
     diffs: result.ok ? summarizeStateDiff(state, result.state) : [],
-    ...(targetLabel ? { targetLabel } : {}),
+    ...(options.targetLabel ? { targetLabel: options.targetLabel } : {}),
     ...(result.ok ? {} : { errors: result.errors.map((error) => error.message) }),
   };
 }
 
-function createShellBeatSchedule(intents: readonly PresentationIntent[]) {
-  return createBeatSchedule(intents, SHELL_BEAT_SCHEDULE_CONFIG);
+function createShellBeatSchedule(
+  intents: readonly PresentationIntent[],
+  playbackMode: PlaybackMode,
+) {
+  return createDemoBeatSchedule(intents, playbackMode);
 }
 
 function summarizeStateDiff(before: GameState, after: GameState): readonly StateDiff[] {

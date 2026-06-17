@@ -17,11 +17,15 @@ import {
   SLAY_LIKE_ZONES,
 } from "@ucre/rulesets";
 
+import type { BossMomentStatus, PlaybackMode } from "./demo-model.js";
+
 interface TheaterCanvasProps {
   readonly state: GameState;
+  readonly playbackMode: PlaybackMode;
+  readonly bossMoment: BossMomentStatus;
 }
 
-export function TheaterCanvas({ state }: TheaterCanvasProps) {
+export function TheaterCanvas({ state, playbackMode, bossMoment }: TheaterCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const theaterRef = useRef<CardTheater | null>(null);
   const renderInput = useMemo(() => createRenderInput(state), [state]);
@@ -29,8 +33,13 @@ export function TheaterCanvas({ state }: TheaterCanvasProps) {
 
   useEffect(() => {
     renderInputRef.current = renderInput;
-    theaterRef.current?.update(renderInput);
-  }, [renderInput]);
+    const theater = theaterRef.current;
+    theater?.update(renderInput);
+
+    if (playbackMode === "fast") {
+      theater?.skipAnimations();
+    }
+  }, [playbackMode, renderInput]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -64,13 +73,17 @@ export function TheaterCanvas({ state }: TheaterCanvasProps) {
   );
 
   return (
-    <section className="theater-stage" aria-label="Card theater">
+    <section className={`theater-stage theater-stage--${bossMoment}`} aria-label="Card theater">
       <canvas ref={canvasRef} aria-label="Three.js card theater" />
       <div className="theater-overlay" aria-label="Theater counts">
         <span>Draw {actorGroups.drawPile.length}</span>
         <span>Hand {actorGroups.hand.length}</span>
         <span>Discard {actorGroups.discardPile.length}</span>
         <span>Enemy {actorGroups.enemy.length}</span>
+        <span>{playbackMode === "fast" ? "Fast" : "Normal"}</span>
+        {bossMoment !== "inactive" ? (
+          <span>{bossMoment === "defeated" ? "Boss clear" : "Boss"}</span>
+        ) : null}
         <button
           className="theater-skip"
           type="button"
